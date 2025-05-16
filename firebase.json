@@ -1,0 +1,25 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "aurify-pushnotification",
+          "appId": "1:323401473101:android:7f333db0fd6eff813ad004",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "aurify-pushnotification",
+          "configurations": {
+            "android": "1:323401473101:android:7f333db0fd6eff813ad004",
+            "ios": "1:323401473101:ios:f9014f54ac16c8af3ad004",
+            "macos": "1:323401473101:ios:f9014f54ac16c8af3ad004",
+            "web": "1:323401473101:web:a78c76412c8a8c123ad004",
+            "windows": "1:323401473101:web:2389a22e4a88e3893ad004"
+          }
+        }
+      }
+    }
+  }
+}

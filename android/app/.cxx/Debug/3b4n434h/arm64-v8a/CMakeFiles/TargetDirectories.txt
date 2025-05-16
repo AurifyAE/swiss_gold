@@ -1,0 +1,2 @@
+C:/Users/mshab/Downloads/swiss_gold/swiss_gold/android/app/.cxx/Debug/3b4n434h/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/mshab/Downloads/swiss_gold/swiss_gold/android/app/.cxx/Debug/3b4n434h/arm64-v8a/CMakeFiles/rebuild_cache.dir
