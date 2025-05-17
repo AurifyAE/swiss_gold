@@ -1,12 +1,11 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:swiss_gold/core/utils/colors.dart';
-// ignore: unused_import
+
 import 'package:swiss_gold/core/utils/endpoint.dart';
 import 'package:swiss_gold/core/utils/enum/view_state.dart';
 import 'package:swiss_gold/core/utils/image_assets.dart';
@@ -78,37 +77,21 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       1,
     );
   }
-void processOrder(Map<String, dynamic> finalPayload) {
-  // Don't directly call bookProducts here
-  // Instead, use the result from DeliveryDetailsView's callback
-  print(finalPayload);
-  
-  if (finalPayload.containsKey("success") && finalPayload["success"] == true) {
-    setState(() {
-      selectedValue = '';
-      bookingData.clear();
-      productQuantities.clear();
-    });
 
-    context.read<ProductViewModel>().clearQuantities();
+  void processOrder(Map<String, dynamic> finalPayload) {
+    print(finalPayload);
 
-    // customSnackBar(
-    //   bgColor: UIColor.gold,
-    //   titleColor: UIColor.white,
-    //   width: 130.w,
-    //   context: context,
-    //   title: 'Booking success'
-    // );
-  } else {
-    // customSnackBar(
-    //   bgColor: UIColor.gold,
-    //   titleColor: UIColor.white,
-    //   width: 130.w,
-    //   context: context,
-    //   title: 'Booking failed'
-    // );
+    if (finalPayload.containsKey("success") &&
+        finalPayload["success"] == true) {
+      setState(() {
+        selectedValue = '';
+        bookingData.clear();
+        productQuantities.clear();
+      });
+
+      context.read<ProductViewModel>().clearQuantities();
+    } else {}
   }
-}
 
   @override
   void initState() {
@@ -180,7 +163,7 @@ void processOrder(Map<String, dynamic> finalPayload) {
           "productId": product.pId,
           "quantity": quantity,
         });
-            }
+      }
     });
   }
 
@@ -222,64 +205,60 @@ void processOrder(Map<String, dynamic> finalPayload) {
     }
   }
 
-void incrementQuantity(int index) {
-  if (index >= context.read<ProductViewModel>().productList.length) {
-    log('Invalid index: $index for product list');
-    return;
-  }
-
-  final product = context.read<ProductViewModel>().productList[index];
-
-  final String productId = product.pId;
-  log('Incrementing quantity for product: $productId at index: $index');
-
-  // First update local state
-  setState(() {
-    if (productQuantities[index] != null) {
-      productQuantities[index] = productQuantities[index]! + 1;
-      log('Updated quantity: ${productQuantities[index]} for index: $index');
-    } else {
-      productQuantities[index] = 1;
-      log('Initial quantity set to 1 for index: $index');
+  void incrementQuantity(int index) {
+    if (index >= context.read<ProductViewModel>().productList.length) {
+      log('Invalid index: $index for product list');
+      return;
     }
 
-    // Update the total quantity in ProductViewModel
-    context
-        .read<ProductViewModel>()
-        .getTotalQuantity(Map<int, int>.from(productQuantities));
+    final product = context.read<ProductViewModel>().productList[index];
 
-    // Update booking data
-    addToBookingData(index, product.pId);
-  });
+    final String productId = product.pId;
+    log('Incrementing quantity for product: $productId at index: $index');
 
-  // If user is not in guest mode, update cart on the server
-  if (context.read<ProductViewModel>().isGuest == false) {
-    context.read<CartViewModel>().incrementQuantity(
-        {'pId': productId}, index: index).then((result) {
-      if (result != null && result.success == true) {
-        log('Cart incremented for product: $productId with quantity: ${productQuantities[index]}');
+    setState(() {
+      if (productQuantities[index] != null) {
+        productQuantities[index] = productQuantities[index]! + 1;
+        log('Updated quantity: ${productQuantities[index]} for index: $index');
       } else {
-        log('Failed to increment cart: ${result?.message ?? "Unknown error"}');
+        productQuantities[index] = 1;
+        log('Initial quantity set to 1 for index: $index');
       }
-    }).catchError((error) {
-      log('Error incrementing cart: $error');
+
+      context
+          .read<ProductViewModel>()
+          .getTotalQuantity(Map<int, int>.from(productQuantities));
+
+      addToBookingData(index, product.pId);
     });
-  } else {
-    // User in guest mode, use admin ID "gyu123" for the cart operations
-    context.read<CartViewModel>().incrementQuantity(
-        {'pId': productId, 'userId': 'gyu123'}, index: index).then((result) {
-      if (result != null && result.success == true) {
-        log('Cart incremented for guest user with admin ID "gyu123" for product: $productId with quantity: ${productQuantities[index]}');
-      } else {
-        log('Failed to increment cart for guest user: ${result?.message ?? "Unknown error"}');
-      }
-    }).catchError((error) {
-      log('Error incrementing cart for guest user: $error');
-    });
-    log('User in guest mode, cart updated on server with admin ID: gyu123');
+
+    if (context.read<ProductViewModel>().isGuest == false) {
+      context
+          .read<CartViewModel>()
+          .incrementQuantity({'pId': productId}, index: index).then((result) {
+        if (result != null && result.success == true) {
+          log('Cart incremented for product: $productId with quantity: ${productQuantities[index]}');
+        } else {
+          log('Failed to increment cart: ${result?.message ?? "Unknown error"}');
+        }
+      }).catchError((error) {
+        log('Error incrementing cart: $error');
+      });
+    } else {
+      context.read<CartViewModel>().incrementQuantity(
+          {'pId': productId, 'userId': 'gyu123'},
+          index: index).then((result) {
+        if (result != null && result.success == true) {
+          log('Cart incremented for guest user with admin ID "gyu123" for product: $productId with quantity: ${productQuantities[index]}');
+        } else {
+          log('Failed to increment cart for guest user: ${result?.message ?? "Unknown error"}');
+        }
+      }).catchError((error) {
+        log('Error incrementing cart for guest user: $error');
+      });
+      log('User in guest mode, cart updated on server with admin ID: gyu123');
+    }
   }
-}
-
 
   void decrementQuantity(int index) {
     if (index >= context.read<ProductViewModel>().productList.length) {
@@ -297,7 +276,6 @@ void incrementQuantity(int index) {
     final String productId = product.pId;
     log('Decrementing quantity for product: $productId at index: $index');
 
-    // First update local state
     setState(() {
       productQuantities[index] = productQuantities[index]! - 1;
       log('Updated quantity: ${productQuantities[index]} for index: $index');
@@ -307,16 +285,13 @@ void incrementQuantity(int index) {
         log('Removed index: $index from productQuantities as quantity is 0');
       }
 
-      // Update the total quantity in ProductViewModel
       context
           .read<ProductViewModel>()
           .getTotalQuantity(Map<int, int>.from(productQuantities));
 
-      // Update booking data
       removeFromBookingData(index, product.pId);
     });
 
-    // If user is not in guest mode, update cart on the server
     if (context.read<ProductViewModel>().isGuest == false) {
       context.read<CartViewModel>().decrementQuantity({
         'pId': productId,
@@ -335,256 +310,229 @@ void incrementQuantity(int index) {
     }
   }
 
- @override
-Widget build(BuildContext context) {
-  return Focus(
-    focusNode: _pageFocusNode,
-    child: Scaffold(
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        child: Row(
-          children: [
-            Consumer<ProductViewModel>(
-              builder: (context, model, child) => Text(
-                'Total Quantity: ${model.totalQuantity}',
-                style: TextStyle(
-                    color: UIColor.gold,
-                    fontFamily: 'Familiar',
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.normal),
-              ),
-            ),
-            Spacer(),
-            Flexible(
-                child: CustomOutlinedBtn(
-              btnTextColor: UIColor.gold,
-              height: 40.h,
-              borderRadius: 12.sp,
-              borderColor: UIColor.gold,
-              padH: 5.w,
-              padV: 5.h,
-              onTapped: () {
-                  if (bookingData.isNotEmpty) {
-                    showAnimatedDialog2(
-                        context,
-                        animationController!,
-                        animation!,
-                        'Choose Your Payment Option',
-                        'You can either pay using cash or opt for gold as your preferred payment method. Select an option to proceed',
-                        [
-                          SizedBox(height: 30.h),
-                          CustomOutlinedBtn(
-                            borderRadius: 12.sp,
-                            borderColor: UIColor.gold,
-                            padH: 12.w,
-                            padV: 12.h,
-                            onTapped: () {
-                              selectedValue = 'Gold';
-                              Navigator.pop(context);
-                              navigateToDeliveryDetails();
-                            },
-                            btnTextColor: UIColor.gold,
-                            btnText: 'Gold to Gold',
-                          ),
-                          SizedBox(height: 10.h),
-                          CustomOutlinedBtn(
-                            borderRadius: 12.sp,
-                            borderColor: UIColor.gold,
-                            padH: 12.w,
-                            padV: 12.h,
-                            onTapped: () {
-                              selectedValue = 'Cash';
-                              Navigator.pop(context);
-                              navigateToDeliveryDetails(
-                                  paymentMethod: context
-                                      .read<OrderHistoryViewModel>()
-                                      .cashPricingModel
-                                      ?.data
-                                      .methodType,
-                                  pricingOption: context
-                                      .read<OrderHistoryViewModel>()
-                                      .cashPricingModel
-                                      ?.data
-                                      .pricingType,
-                                  amount: context
-                                      .read<OrderHistoryViewModel>()
-                                      .cashPricingModel
-                                      ?.data
-                                      .value
-                                      .toString());
-                                      selectedValue = '';
-      // bookingData.clear();
-      productQuantities.clear();
-
-                                      
-                            },
-                            btnTextColor: UIColor.gold,
-                            btnText: 'Cash',
-                          ),
-                        ]);
-                  } else {
-                    customSnackBar(
-                        bgColor: UIColor.gold,
-                        titleColor: UIColor.white,
-                        width: 180.w,
-                        context: context,
-                        title: 'Please select products');
-                  }
-                },
-                btnText: 'Place order',
-              ))
-            ],
-          ),
-        ),
-        body: Padding(
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
-        child: RefreshIndicator(
-          backgroundColor: Colors.transparent, 
-          color: UIColor.gold,
-          onRefresh: () async {
-            // Reset to first page
-            currentPage = 1;
-            
-            // Get the ProductViewModel
-            final model = context.read<ProductViewModel>();
-            
-            // First clear products
-            model.clearProducts(); 
-            
-            // Refresh user status and fetch products
-            await model.refreshUserStatus();
-            
-            // Also refresh market data if available
-            model.getSpotRate();
-            
-            // Sync quantities from view model
-            _syncQuantitiesFromViewModel();
-            
-            // Return completed future
-            return Future.value();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(), // Important for pull to refresh
-            controller: scrollController,
-            child: Column(
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+        focusNode: _pageFocusNode,
+        child: Scaffold(
+          bottomNavigationBar: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Row(
               children: [
                 Consumer<ProductViewModel>(
-                  builder: (context, model, child) {
-                  if (model.state == ViewState.loading) {
-                    return GridView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: 6,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16.h,
-                            crossAxisSpacing: 16.w),
-                        itemBuilder: (context, index) {
-                          return CategoryShimmer();
-                        });
-                  } else if (model.productList.isEmpty) {
-                    return Center(
-                      heightFactor: 2.h,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(ImageAssets.noProducts),
-                          SizedBox(height: 10.h),
-                          Text(
-                            "Sorry no products found\ntry some other category",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: UIColor.gold,
-                              fontSize: 20.sp,
-                              fontFamily: 'Familiar',
+                  builder: (context, model, child) => Text(
+                    'Total Quantity: ${model.totalQuantity}',
+                    style: TextStyle(
+                        color: UIColor.gold,
+                        fontFamily: 'Familiar',
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.normal),
+                  ),
+                ),
+                Spacer(),
+                Flexible(
+                    child: CustomOutlinedBtn(
+                  btnTextColor: UIColor.gold,
+                  height: 40.h,
+                  borderRadius: 12.sp,
+                  borderColor: UIColor.gold,
+                  padH: 5.w,
+                  padV: 5.h,
+                  onTapped: () {
+                    if (bookingData.isNotEmpty) {
+                      showAnimatedDialog2(
+                          context,
+                          animationController!,
+                          animation!,
+                          'Choose Your Payment Option',
+                          'You can either pay using cash or opt for gold as your preferred payment method. Select an option to proceed',
+                          [
+                            SizedBox(height: 30.h),
+                            CustomOutlinedBtn(
+                              borderRadius: 12.sp,
+                              borderColor: UIColor.gold,
+                              padH: 12.w,
+                              padV: 12.h,
+                              onTapped: () {
+                                selectedValue = 'Gold';
+                                Navigator.pop(context);
+                                navigateToDeliveryDetails();
+                              },
+                              btnTextColor: UIColor.gold,
+                              btnText: 'Gold to Gold',
                             ),
-                          )
-                        ],
-                      ),
-                    );
-                  } else {
+                            SizedBox(height: 10.h),
+                            CustomOutlinedBtn(
+                              borderRadius: 12.sp,
+                              borderColor: UIColor.gold,
+                              padH: 12.w,
+                              padV: 12.h,
+                              onTapped: () {
+                                selectedValue = 'Cash';
+                                Navigator.pop(context);
+                                navigateToDeliveryDetails(
+                                    paymentMethod: context
+                                        .read<OrderHistoryViewModel>()
+                                        .cashPricingModel
+                                        ?.data
+                                        .methodType,
+                                    pricingOption: context
+                                        .read<OrderHistoryViewModel>()
+                                        .cashPricingModel
+                                        ?.data
+                                        .pricingType,
+                                    amount: context
+                                        .read<OrderHistoryViewModel>()
+                                        .cashPricingModel
+                                        ?.data
+                                        .value
+                                        .toString());
+                                selectedValue = '';
 
-              void updateQuantityDirectly(int index, int newQuantity) {
-  if (index >= context.read<ProductViewModel>().productList.length) {
-    log('Invalid index: $index for product list');
-    return;
-  }
+                                productQuantities.clear();
+                              },
+                              btnTextColor: UIColor.gold,
+                              btnText: 'Cash',
+                            ),
+                          ]);
+                    } else {
+                      customSnackBar(
+                          bgColor: UIColor.gold,
+                          titleColor: UIColor.white,
+                          width: 180.w,
+                          context: context,
+                          title: 'Please select products');
+                    }
+                  },
+                  btnText: 'Place order',
+                ))
+              ],
+            ),
+          ),
+          body: Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
+            child: RefreshIndicator(
+              backgroundColor: Colors.transparent,
+              color: UIColor.gold,
+              onRefresh: () async {
+                currentPage = 1;
 
-  final product = context.read<ProductViewModel>().productList[index];
-  final String productId = product.pId;
-  
-  // Calculate difference for booking data
-  final int oldQuantity = productQuantities[index] ?? 0;
-  final int difference = newQuantity - oldQuantity;
-  
-  log('Updating quantity directly for product: $productId at index: $index from $oldQuantity to $newQuantity');
+                final model = context.read<ProductViewModel>();
 
-  // Update local state
-  setState(() {
-    if (newQuantity > 0) {
-      productQuantities[index] = newQuantity;
-      log('Updated quantity: $newQuantity for index: $index');
-    } else {
-      productQuantities.remove(index);
-      log('Removed index: $index from productQuantities as quantity is 0');
-    }
+                model.clearProducts();
 
-    // Update the total quantity in ProductViewModel
-    context
-        .read<ProductViewModel>()
-        .getTotalQuantity(Map<int, int>.from(productQuantities));
+                await model.refreshUserStatus();
 
-    // Update booking data
-    if (difference > 0) {
-      // Add the difference to booking data
-      for (int i = 0; i < difference; i++) {
-        addToBookingData(index, product.pId);
-      }
-    } else if (difference < 0) {
-      // Remove the absolute difference from booking data
-      for (int i = 0; i < difference.abs(); i++) {
-        removeFromBookingData(index, product.pId);
-      }
-    }
-  });
+                model.getSpotRate();
 
-  // If user is not in guest mode, update cart on the server using the new endpoint
-  if (context.read<ProductViewModel>().isGuest == false) {
-    context.read<CartViewModel>().updateCartQuantity(
-      productId, 
-      newQuantity
-    ).then((result) {
-      if (result != null && result.success == true) {
-        log('Cart updated for product: $productId with quantity: $newQuantity');
-        
-        // Navigate to delivery page if needed
-        if (bookingData.isNotEmpty && newQuantity > 0) {
-          // Optionally trigger navigation to delivery page
-          // This would typically happen in response to a user action
-          // like clicking "Place Order" button
-        }
-      } else {
-        log('Failed to update cart: ${result?.message ?? "Unknown error"}');
-      }
-    }).catchError((error) {
-      log('Error updating cart: $error');
-    });
-  } else {
-    // User in guest mode - handle guest logic
-    log('User in guest mode, cart not updated on server');
-  }
-}
-                    return Column(
-                      children: [
-                        GridView.builder(
-  physics: NeverScrollableScrollPhysics(),
+                _syncQuantitiesFromViewModel();
+
+                return Future.value();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                controller: scrollController,
+                child: Column(
+                  children: [
+                    Consumer<ProductViewModel>(
+                        builder: (context, model, child) {
+                      if (model.state == ViewState.loading) {
+                        return Center(
+                          child: Lottie.asset(ImageAssets.loading),
+                        );
+                      } else if (model.productList.isEmpty) {
+                        return Center(
+                          heightFactor: 2.h,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(ImageAssets.noProducts),
+                              SizedBox(height: 10.h),
+                              Text(
+                                "Sorry no products found\ntry some other category",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontSize: 20.sp,
+                                  fontFamily: 'Familiar',
+                                ),
+                              )
+                            ],
+                          ),
+                        );
+                      } else {
+                        void updateQuantityDirectly(
+                            int index, int newQuantity) {
+                          if (index >=
+                              context
+                                  .read<ProductViewModel>()
+                                  .productList
+                                  .length) {
+                            log('Invalid index: $index for product list');
+                            return;
+                          }
+
+                          final product = context
+                              .read<ProductViewModel>()
+                              .productList[index];
+                          final String productId = product.pId;
+
+                          final int oldQuantity = productQuantities[index] ?? 0;
+                          final int difference = newQuantity - oldQuantity;
+
+                          log('Updating quantity directly for product: $productId at index: $index from $oldQuantity to $newQuantity');
+
+                          setState(() {
+                            if (newQuantity > 0) {
+                              productQuantities[index] = newQuantity;
+                              log('Updated quantity: $newQuantity for index: $index');
+                            } else {
+                              productQuantities.remove(index);
+                              log('Removed index: $index from productQuantities as quantity is 0');
+                            }
+
+                            context.read<ProductViewModel>().getTotalQuantity(
+                                Map<int, int>.from(productQuantities));
+
+                            if (difference > 0) {
+                              for (int i = 0; i < difference; i++) {
+                                addToBookingData(index, product.pId);
+                              }
+                            } else if (difference < 0) {
+                              for (int i = 0; i < difference.abs(); i++) {
+                                removeFromBookingData(index, product.pId);
+                              }
+                            }
+                          });
+
+                          if (context.read<ProductViewModel>().isGuest ==
+                              false) {
+                            context
+                                .read<CartViewModel>()
+                                .updateCartQuantity(productId, newQuantity)
+                                .then((result) {
+                              if (result != null && result.success == true) {
+                                log('Cart updated for product: $productId with quantity: $newQuantity');
+
+                                if (bookingData.isNotEmpty &&
+                                    newQuantity > 0) {}
+                              } else {
+                                log('Failed to update cart: ${result?.message ?? "Unknown error"}');
+                              }
+                            }).catchError((error) {
+                              log('Error updating cart: $error');
+                            });
+                          } else {
+                            log('User in guest mode, cart not updated on server');
+                          }
+                        }
+
+                        return Column(
+                          children: [
+                           ListView.builder(
+  physics: BouncingScrollPhysics(),
   key: PageStorageKey('productKey'),
   shrinkWrap: true,
-  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
-      childAspectRatio: 1.2,
-      mainAxisSpacing: 16.h,
-      crossAxisSpacing: 16.w),
   itemCount: model.productList.length,
   itemBuilder: (context, index) {
     final product = model.productList[index];
@@ -600,87 +548,82 @@ Widget build(BuildContext context) {
         : 'AED ${(product.price).toStringAsFixed(2)}';
     final String productType = product.type ?? 'Unknown';
 
-    return CustomCard(
-      onIncrement: () => incrementQuantity(index),
-      onDecrement: () => decrementQuantity(index),
-      onQuantityEntered: (newQuantity) => updateQuantityDirectly(index, newQuantity), // Add this line
-      onAddToCart: () {
-        if (model.isGuest == false) {
-          context
-              .read<CartViewModel>()
-              .updateQuantityFromHome(productId, {
-            'quantity': productQuantities[index] ?? 1
-          }).then((response) {
-            if (response?.success == true) {
-              setState(() {
-                productQuantities.remove(index);
-              });
-              context
-                  .read<ProductViewModel>()
-                  .getTotalQuantity(Map<int, int>.from(
-                      productQuantities));
-            }
-            customSnackBar(
-              context: context,
-              width: 250.w,
-              bgColor: UIColor.gold,
-              title: response?.message?.toString() ??
-                  'Action completed',
-            );
-          });
-        } else {
-          Navigator.pushAndRemoveUntil(
+    return Padding(
+      padding: EdgeInsets.only(bottom: 16.h),
+      child: CustomCard(
+        onIncrement: () => incrementQuantity(index),
+        onDecrement: () => decrementQuantity(index),
+        onQuantityEntered: (newQuantity) => updateQuantityDirectly(index, newQuantity),
+        onAddToCart: () {
+          if (model.isGuest == false) {
+            context.read<CartViewModel>().updateQuantityFromHome(productId, {
+              'quantity': productQuantities[index] ?? 1
+            }).then((response) {
+              if (response?.success == true) {
+                setState(() {
+                  productQuantities.remove(index);
+                });
+                context.read<ProductViewModel>().getTotalQuantity(
+                    Map<int, int>.from(productQuantities));
+              }
+              customSnackBar(
+                context: context,
+                width: 250.w,
+                bgColor: UIColor.gold,
+                title: response?.message?.toString() ?? 'Action completed',
+              );
+            });
+          } else {
+            Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => LoginView()),
+                (route) => false);
+          }
+        },
+        prodImg: imageUrl,
+        title: title,
+        quantity: quantity,
+        price: price,
+        subTitle: productType,
+        onTap: () {
+          navigateWithAnimationTo(
               context,
-              MaterialPageRoute(
-                  builder: (context) => LoginView()),
-              (route) => false);
-        }
-      },
-      prodImg: imageUrl,
-      title: title,
-      quantity: quantity,
-      price: price,
-      subTitle: productType,
-      onTap: () {
-        navigateWithAnimationTo(
-            context,
-            ProductView(
-              prodImg: product.prodImgs
-                  .map((e) => e.url)
-                  .toList(),
-              title: title,
-              pId: productId,
-              desc: product.desc,
-              type: productType,
-              stock: product.stock,
-              purity: product.purity,
-              weight: product.weight,
-              makingCharge: product.makingCharge,
-            ),
-            0,
-            1);
-      },
+              ProductView(
+                prodImg: product.prodImgs.map((e) => e.url).toList(),
+                title: title,
+                pId: productId,
+                desc: product.desc,
+                type: productType,
+                stock: product.stock,
+                purity: product.purity,
+                weight: product.weight,
+                makingCharge: product.makingCharge,
+              ),
+              0,
+              1);
+        },
+      ),
     );
   },
 ),
-                        if (model.state == ViewState.loadingMore)
-                          Padding(
-                            padding: EdgeInsets.only(top: 20.h),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                  color: UIColor.gold),
-                            ),
-                          ),
-                      ],
-                    );
-                  }
-                })
-              ],
+                            if (model.state == ViewState.loadingMore)
+                              Padding(
+                                padding: EdgeInsets.only(top: 20.h),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                      color: UIColor.gold),
+                                ),
+                              ),
+                          ],
+                        );
+                      }
+                    })
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    ));
+        ));
   }
 
   @override

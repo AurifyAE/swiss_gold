@@ -8,5 +8,6 @@ class ImageAssets {
   static String whatsapp = 'assets/pngs/whatsapp.png';
   static String gmail = 'assets/pngs/gmail.png';
   static String phone = 'assets/pngs/phone.png';
+  static String loading = 'assets/pngs/loading.json';
 
 }
