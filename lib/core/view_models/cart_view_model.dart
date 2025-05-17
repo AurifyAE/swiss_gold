@@ -138,6 +138,28 @@ class CartViewModel extends BaseModel {
     return _messageModel;
   }
 
+  // Added the missing clearCart method
+  Future<MessageModel?> clearCart() async {
+    setState(ViewState.loading);
+    try {
+      _messageModel = await CartService.clearCart();
+      
+      if (_messageModel != null && _messageModel!.success == true) {
+        _cartItemList.clear();
+        log('Cart cleared successfully');
+      } else {
+        log('Failed to clear cart: ${_messageModel?.message ?? "Unknown error"}');
+      }
+    } catch (e) {
+      log('Error clearing cart: ${e.toString()}');
+      _messageModel = MessageModel(success: false, message: e.toString());
+    }
+    
+    setState(ViewState.idle);
+    notifyListeners();
+    return _messageModel;
+  }
+
   void navigateToDeliveryPage(BuildContext context, Map<String, dynamic> bookingData, DateTime deliveryDate, String paymentMethod) {
     Map<String, dynamic> orderData = {
       "bookingData": bookingData,

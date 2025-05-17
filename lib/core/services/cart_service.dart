@@ -212,4 +212,38 @@ class CartService {
       return null;
     }
   }
+
+  static Future<MessageModel?> clearCart() async {
+    try {
+      final userId = await LocalStorage.getString('userId');
+      
+      // Assuming the endpoint for clearing cart follows similar pattern
+      // If you need a different endpoint, replace with the correct one
+      final url = 'https://api.nova.aurify.ae/user/cart/clear/$userId';
+      
+      log('Clearing cart URL: $url');
+      
+      var response = await client.delete(
+        Uri.parse(url),
+        headers: {
+          'X-Secret-Key': secreteKey,
+          'Content-Type': 'application/json'
+        },
+      );
+      
+      log('Clear cart response status: ${response.statusCode}');
+      log('Clear cart response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = jsonDecode(response.body);
+        return MessageModel.fromJson(responseData);
+      } else {
+        Map<String, dynamic> responseData = jsonDecode(response.body);
+        return MessageModel.fromJson(responseData);
+      }
+    } catch (e) {
+      log('Error clearing cart: $e');
+      return MessageModel(success: false, message: e.toString());
+    }
+  }
 }

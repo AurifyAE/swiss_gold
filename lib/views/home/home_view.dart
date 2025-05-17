@@ -41,42 +41,82 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   final FocusNode _pageFocusNode = FocusNode();
   bool _initialFetchDone = false;
 
-  void navigateToDeliveryDetails(
-      {String? paymentMethod, String? pricingOption, String? amount}) {
-    final effectivePaymentMethod =
-        selectedValue != 'Gold' ? (paymentMethod ?? 'Cash') : 'Gold';
+void navigateToDeliveryDetails(
+    {String? paymentMethod, String? pricingOption, String? amount}) {
+  final effectivePaymentMethod =
+      selectedValue != 'Gold' ? (paymentMethod ?? 'Cash') : 'Gold';
 
-    Map<String, dynamic> finalPayload = {
-      "bookingData": bookingData,
-      "paymentMethod": effectivePaymentMethod,
-      if (selectedValue != 'Gold' && pricingOption != null)
-        "pricingOption": pricingOption,
-      "deliveryDate": selectedDate.toString().split(' ')[0]
-    };
+  Map<String, dynamic> finalPayload = {
+    "bookingData": bookingData,
+    "paymentMethod": effectivePaymentMethod,
+    if (selectedValue != 'Gold' && pricingOption != null)
+      "pricingOption": pricingOption,
+    "deliveryDate": selectedDate.toString().split(' ')[0]
+  };
 
-    if (selectedValue == 'Gold' &&
-        pricingOption == 'Premium' &&
-        amount != null) {
-      finalPayload['premium'] = amount;
-    }
-    if (selectedValue != 'Gold' &&
-        pricingOption == 'Discount' &&
-        amount != null) {
-      finalPayload['discount'] = amount;
-    }
-
-    navigateWithAnimationTo(
-      context,
-      DeliveryDetailsView(
-        orderData: finalPayload,
-        onConfirm: (deliveryDetails) {
-          processOrder(finalPayload);
-        },
-      ),
-      0,
-      1,
-    );
+  if (selectedValue == 'Gold' &&
+      pricingOption == 'Premium' &&
+      amount != null) {
+    finalPayload['premium'] = amount;
   }
+  if (selectedValue != 'Gold' &&
+      pricingOption == 'Discount' &&
+      amount != null) {
+    finalPayload['discount'] = amount;
+  }
+
+  // Use Navigator.push with awaiting the result
+  Navigator.push<Map<String, dynamic>>(
+    context,
+    PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => 
+        DeliveryDetailsView(
+          orderData: finalPayload,
+          onConfirm: (deliveryDetails) {
+            processOrder(finalPayload);
+          },
+        ),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        const curve = Curves.easeInOut;
+        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var offsetAnimation = animation.drive(tween);
+        return SlideTransition(position: offsetAnimation, child: child);
+      },
+    ),
+  ).then((result) {
+    // Handle the result from DeliveryDetailsView
+    if (result != null) {
+      log('Returned from delivery page with result: $result');
+      
+      // If order was successful, reset state
+      if (result['orderSuccess'] == true) {
+  setState(() {
+    selectedValue = '';
+    bookingData.clear();
+    productQuantities.clear();
+  });
+  
+  // Clear ViewModel state too
+  final productViewModel = context.read<ProductViewModel>();
+  productViewModel.clearQuantities();
+  
+  log('Order was successful, quantities reset');
+} 
+// If explicitly cancelled, keep the state
+else if (result['cancelled'] == true) {
+  log('Order was cancelled, keeping quantities');
+  // Just sync with view model to ensure consistency
+  _syncQuantitiesFromViewModel();
+}
+// If there was an error or other failure, sync with view model
+else {
+  log('Order failed or had an error, syncing quantities');
+  _syncQuantitiesFromViewModel();
+}}
+  });
+}
 
   void processOrder(Map<String, dynamic> finalPayload) {
     print(finalPayload);
@@ -145,12 +185,12 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   }
 
   void _syncQuantitiesFromViewModel() {
-    final viewModel = context.read<ProductViewModel>();
-    setState(() {
-      productQuantities = Map<int, int>.from(viewModel.productQuantities);
-      _updateBookingData();
-    });
-  }
+  final viewModel = context.read<ProductViewModel>();
+  setState(() {
+    productQuantities = Map<int, int>.from(viewModel.productQuantities);
+    _updateBookingData();
+  });
+}
 
   void _updateBookingData() {
     bookingData.clear();

@@ -239,6 +239,36 @@ class ProductViewModel extends BaseModel {
     }
   }
 
+//   void clearQuantities() {
+//   // Method 1: If you store quantities in a separate map
+//   if (_productQuantities != null) {
+//     _productQuantities.clear();
+//   }
+  
+//   // Method 2: If quantities are stored in product objects
+//   for (var product in productList) {
+//     product.quantity = 0; // or null, depending on your model structure
+//   }
+  
+//   // Ensure UI is updated
+//   notifyListeners();
+  
+//   // Log confirmation
+//   dev.log("Product quantities cleared successfully");
+// }
+
+// // Alternatively, if you're storing selected products in a separate list
+// void clearSelectedProducts() {
+//   selectedProducts.clear();
+//   notifyListeners();
+//   dev.log("Selected products cleared");
+// }
+
+  void setTotalQuantity(num quantity) {
+  _totalQuantity = quantity;
+  notifyListeners();
+}
+
   void clearProducts() {
   _productList.clear();
   hasMoreData = true;

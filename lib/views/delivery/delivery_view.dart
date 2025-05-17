@@ -12,6 +12,7 @@ import 'package:swiss_gold/core/services/server_provider.dart';
 
 import '../../core/utils/money_format_heper.dart';
 import '../../core/utils/widgets/snakbar.dart';
+import '../../core/view_models/cart_view_model.dart';
 
 class DeliveryDetailsView extends StatefulWidget {
   final Map<String, dynamic> orderData;
@@ -915,7 +916,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                       final goldRateProvider =
                           Provider.of<GoldRateProvider>(context, listen: false);
 
-                      // Calculate gold rate
                       double originalBid = 0.0;
                       double biddingPrice = 0.0;
                       double askingPrice = 0.0;
@@ -943,7 +943,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                         }
                       }
 
-                      // Format booking data according to the new structure
                       List<Map<String, dynamic>> bookingDataWithMakingCharges =
                           [];
                       List bookingData =
@@ -956,9 +955,10 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                         Product product =
                             productViewModel.productList.firstWhere(
                           (p) => p.pId == productId,
+                          orElse: () =>
+                              throw Exception("Product not found: $productId"),
                         );
 
-                        // For each product in the quantity, add a separate entry
                         for (int i = 0; i < quantity; i++) {
                           bookingDataWithMakingCharges.add({
                             "productId": productId,
@@ -967,7 +967,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                         }
                       }
 
-                      // Create the payload
                       final bookingPayload = {
                         "paymentMethod": widget.orderData["paymentMethod"],
                         "bookingData": bookingDataWithMakingCharges,
@@ -978,13 +977,17 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
 
                       dev.log("Booking payload: ${jsonEncode(bookingPayload)}");
 
-                      // Call the booking API directly
                       final bookingResult =
                           await productViewModel.bookProducts(bookingPayload);
 
-                      Navigator.of(context).pop(); // Close loading dialog
+                      Navigator.of(context).pop();
 
                       if (bookingResult != null && bookingResult.success!) {
+                        productViewModel.clearQuantities();
+
+                        final cartViewModel =
+                            Provider.of<CartViewModel>(context, listen: false);
+                        await cartViewModel.clearCart();
                         productViewModel.clearQuantities();
 
                         widget.onConfirm(
@@ -996,15 +999,19 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                           message: 'Booking success',
                         );
 
-                        Navigator.pop(context);
+                        Navigator.pop(context, {"orderSuccess": true});
                       } else {
                         showOrderStatusSnackBar(
                           context: context,
                           isSuccess: false,
-                          message: 'Booking failed',
+                          message: bookingResult?.message ?? 'Booking failed',
                         );
+
+                        Navigator.pop(context, {"orderSuccess": false});
                       }
                     } catch (e) {
+                      dev.log(
+                          "Error during order confirmation: ${e.toString()}");
                       Navigator.of(context).pop();
 
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1016,10 +1023,30 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                           backgroundColor: Colors.red,
                         ),
                       );
-                    } 
+
+                      Navigator.pop(context,
+                          {"orderSuccess": false, "error": e.toString()});
+                    }
                   },
                   btnTextColor: UIColor.gold,
                   btnText: 'Confirm Order',
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(
+                        context, {"orderSuccess": false, "cancelled": true});
+                  },
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: UIColor.gold.withOpacity(0.8),
+                      fontFamily: 'Familiar',
+                      fontSize: 16.sp,
+                    ),
+                  ),
                 ),
               ),
             ],
