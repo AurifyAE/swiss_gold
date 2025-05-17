@@ -43,6 +43,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
 void navigateToDeliveryDetails(
     {String? paymentMethod, String? pricingOption, String? amount}) {
+  // Store current state before navigation
+  final Map<int, int> previousQuantities = Map<int, int>.from(productQuantities);
+  final List<Map<String, dynamic>> previousBookingData = List<Map<String, dynamic>>.from(bookingData);
+  
   final effectivePaymentMethod =
       selectedValue != 'Gold' ? (paymentMethod ?? 'Cash') : 'Gold';
 
@@ -64,6 +68,10 @@ void navigateToDeliveryDetails(
       amount != null) {
     finalPayload['discount'] = amount;
   }
+
+  // Ensure the ViewModel has the current state before navigation
+  final productViewModel = context.read<ProductViewModel>();
+  productViewModel.setQuantities(Map<int, int>.from(productQuantities));
 
   // Use Navigator.push with awaiting the result
   Navigator.push<Map<String, dynamic>>(
@@ -92,29 +100,55 @@ void navigateToDeliveryDetails(
       
       // If order was successful, reset state
       if (result['orderSuccess'] == true) {
-  setState(() {
-    selectedValue = '';
-    bookingData.clear();
-    productQuantities.clear();
+        setState(() {
+          selectedValue = '';
+          bookingData.clear();
+          productQuantities.clear();
+        });
+        
+        // Clear ViewModel state too
+        productViewModel.clearQuantities();
+        
+        log('Order was successful, quantities reset');
+      } 
+      // If explicitly cancelled or failed, restore the previous state
+      else {
+        log('Order was cancelled or failed, restoring previous quantities');
+        setState(() {
+          productQuantities = Map<int, int>.from(previousQuantities);
+          bookingData = List<Map<String, dynamic>>.from(previousBookingData);
+        });
+        
+        // Restore ViewModel state too
+        productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
+        productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
+      }
+    } else {
+      // If result is null (back button press), restore previous state
+      log('Navigation returned null (likely back button), restoring previous state');
+      setState(() {
+        productQuantities = Map<int, int>.from(previousQuantities);
+        bookingData = List<Map<String, dynamic>>.from(previousBookingData);
+      });
+      
+      // Restore ViewModel state too
+      productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
+      productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
+    }
   });
-  
-  // Clear ViewModel state too
-  final productViewModel = context.read<ProductViewModel>();
-  productViewModel.clearQuantities();
-  
-  log('Order was successful, quantities reset');
-} 
-// If explicitly cancelled, keep the state
-else if (result['cancelled'] == true) {
-  log('Order was cancelled, keeping quantities');
-  // Just sync with view model to ensure consistency
-  _syncQuantitiesFromViewModel();
 }
-// If there was an error or other failure, sync with view model
-else {
-  log('Order failed or had an error, syncing quantities');
-  _syncQuantitiesFromViewModel();
-}}
+
+// Add this method to ProductViewModel class
+
+
+
+@override
+void didChangeDependencies() {
+  super.didChangeDependencies();
+  
+  // Synchronize with ViewModel when dependencies change (like after navigation)
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _syncQuantitiesFromViewModel();
   });
 }
 
@@ -184,12 +218,19 @@ else {
     }
   }
 
-  void _syncQuantitiesFromViewModel() {
+void _syncQuantitiesFromViewModel() {
   final viewModel = context.read<ProductViewModel>();
-  setState(() {
-    productQuantities = Map<int, int>.from(viewModel.productQuantities);
-    _updateBookingData();
-  });
+  
+  // Only update if ViewModel has quantities
+  if (viewModel.productQuantities.isNotEmpty) {
+    setState(() {
+      productQuantities = Map<int, int>.from(viewModel.productQuantities);
+      _updateBookingData();
+    });
+    
+    // Make sure total quantity is updated too
+    viewModel.getTotalQuantity(productQuantities);
+  }
 }
 
   void _updateBookingData() {

@@ -85,6 +85,12 @@ class ProductViewModel extends BaseModel {
     notifyListeners();
   }
 
+void setQuantities(Map<int, int> quantities) {
+  _productQuantities = quantities;
+  getTotalQuantity(quantities); // Update total quantity as well
+  notifyListeners();
+}
+
   Future<MessageModel?> fixPrice(Map<String, dynamic> payload) async {
     setState(ViewState.loading);
     try {
