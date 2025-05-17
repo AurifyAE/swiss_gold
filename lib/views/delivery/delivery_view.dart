@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +42,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
         (p) => p.pId == productId,
       );
 
-      // Maintain 3 digit precision for calculations
       double productWeight = double.parse(product.weight.toStringAsFixed(3));
       totalWeight += productWeight * quantity;
 
@@ -56,25 +54,12 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
     return totalWeight;
   }
 
-  // double calculatePurityPower(dynamic purity) {
-  //   String purityStr = purity.toString();
-  //   int digitCount = purityStr.length;
-  //   double powerOfTen = pow(10, digitCount).toDouble();
-  //   double result = purity / powerOfTen;
-
-  //   dev.log(
-  //       '🧮 Purity calculation: purity=$purity, digits=$digitCount, power=$powerOfTen, result=$result');
-  //   return result;
-  // }
-
   double calculatePurityPower(dynamic purity) {
-    // Convert to string without decimal part if it's a whole number
     String purityStr = purity.toString().replaceAll(RegExp(r'\.0$'), '');
 
-    // Remove any trailing zeros after decimal point if there's a decimal
     if (purityStr.contains('.')) {
       purityStr = purityStr.replaceAll(RegExp(r'0+$'), '');
-      // If we ended up with just a decimal point at the end, remove it
+
       purityStr = purityStr.replaceAll(RegExp(r'\.$'), '');
     }
 
@@ -82,24 +67,17 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
     double powerOfTen = pow(10, digitCount).toDouble();
     double result = double.parse(purityStr) / powerOfTen;
 
-    // Standard gold purity handling for common values
     if (purityStr == '9999' || purityStr == '999.9') {
-      // 24K gold (99.99%)
       return 0.9999;
     } else if (purityStr == '999' || purityStr == '99.9') {
-      // 24K gold (99.9%)
       return 0.999;
     } else if (purityStr == '916' || purityStr == '91.6') {
-      // 22K gold (91.6%)
       return 0.916;
     } else if (purityStr == '750' || purityStr == '75.0') {
-      // 18K gold (75%)
       return 0.750;
     } else if (purityStr == '585' || purityStr == '58.5') {
-      // 14K gold (58.5%)
       return 0.585;
     } else if (purityStr == '375' || purityStr == '37.5') {
-      // 9K gold (37.5%)
       return 0.375;
     }
 
@@ -109,132 +87,118 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
   }
 
   double calculateTotalAmount(
-  ProductViewModel productViewModel, GoldRateProvider goldRateProvider) {
-  double totalAmount = 0.0;
-  List bookingData = widget.orderData["bookingData"] as List;
+      ProductViewModel productViewModel, GoldRateProvider goldRateProvider) {
+    double totalAmount = 0.0;
+    List bookingData = widget.orderData["bookingData"] as List;
 
-  // Add explicit log tag to make filtering easier
-  dev.log("[TOTAL_AMOUNT_CALC] Starting total amount calculation...", name: "GOLD_CALC");
+    dev.log("[TOTAL_AMOUNT_CALC] Starting total amount calculation...",
+        name: "GOLD_CALC");
 
-  // Calculate bidPrice using the formula
-  double originalBid = 0.0;
-  double biddingPrice = 0.0;
-  double askingPrice = 0.0;
-  double bidPrice = 0.0;
+    double originalBid = 0.0;
+    double biddingPrice = 0.0;
+    double askingPrice = 0.0;
+    double bidPrice = 0.0;
 
-  if (goldRateProvider.goldData != null) {
-    // Get the original bid value
-    originalBid =
-        double.tryParse('${goldRateProvider.goldData!['bid']}') ?? 0.0;
-    dev.log("[TOTAL_AMOUNT_CALC] Original bid from socket: $originalBid", name: "GOLD_CALC");
+    if (goldRateProvider.goldData != null) {
+      originalBid =
+          double.tryParse('${goldRateProvider.goldData!['bid']}') ?? 0.0;
+      dev.log("[TOTAL_AMOUNT_CALC] Original bid from socket: $originalBid",
+          name: "GOLD_CALC");
 
-    // Set default values for spreads if spotRateData is null
-    double bidSpread = 0.0;
-    double askSpread = 0.0;
+      double bidSpread = 0.0;
+      double askSpread = 0.0;
 
-    // Get spread values if spotRateData is available
-    if (goldRateProvider.spotRateData != null) {
-      bidSpread = goldRateProvider.spotRateData!.goldBidSpread;
-      askSpread = goldRateProvider.spotRateData!.goldAskSpread;
+      if (goldRateProvider.spotRateData != null) {
+        bidSpread = goldRateProvider.spotRateData!.goldBidSpread;
+        askSpread = goldRateProvider.spotRateData!.goldAskSpread;
+      } else {
+        dev.log(
+            "[TOTAL_AMOUNT_CALC] Spot rate data is null, using bidSpread=0 and askSpread=0",
+            name: "GOLD_CALC");
+      }
+
+      biddingPrice = originalBid + bidSpread;
+      dev.log(
+          "[TOTAL_AMOUNT_CALC] Step 1: Bidding price: $originalBid (bid) + $bidSpread (bid spread) = $biddingPrice",
+          name: "GOLD_CALC");
+
+      askingPrice = biddingPrice + askSpread + 0.5;
+      dev.log(
+          "[TOTAL_AMOUNT_CALC] Step 2: Asking price: $biddingPrice (bidding price) + $askSpread (ask spread) + 0.5 = $askingPrice",
+          name: "GOLD_CALC");
     } else {
       dev.log(
-          "[TOTAL_AMOUNT_CALC] Spot rate data is null, using bidSpread=0 and askSpread=0",
+          "[TOTAL_AMOUNT_CALC] Warning: Gold data is not available, using zero for bid price",
           name: "GOLD_CALC");
     }
 
-    // Step 1: bid + bidspread = bidding price
-    biddingPrice = originalBid + bidSpread;
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] Step 1: Bidding price: $originalBid (bid) + $bidSpread (bid spread) = $biddingPrice",
-        name: "GOLD_CALC");
+    for (var item in bookingData) {
+      String productId = item["productId"];
+      int quantity = item["quantity"] ?? 1;
 
-    // Step 2: bidding price + ask spread + 0.5 = asking price
-    askingPrice = biddingPrice + askSpread + 0.5;
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] Step 2: Asking price: $biddingPrice (bidding price) + $askSpread (ask spread) + 0.5 = $askingPrice",
-        name: "GOLD_CALC");
-  } else {
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] Warning: Gold data is not available, using zero for bid price",
-        name: "GOLD_CALC");
-  }
-
-  // Process each item in the order
-  for (var item in bookingData) {
-    String productId = item["productId"];
-    int quantity = item["quantity"] ?? 1;
-
-    dev.log("[TOTAL_AMOUNT_CALC] Processing product ID: $productId, quantity: $quantity", name: "GOLD_CALC");
-
-    Product? product = productViewModel.productList.firstWhere(
-      (p) => p.pId == productId,
-    );
-
-    // Apply product-specific premium/discount to the asking price in USD/oz
-    double adjustedAskingPrice = askingPrice;
-    if (product.pricingType == 'Premium' && product.value != null) {
-      // Apply premium directly to the asking price (in USD/oz)
-      adjustedAskingPrice += product.value!.toDouble();
       dev.log(
-          "[TOTAL_AMOUNT_CALC] Applied product premium: $askingPrice + ${product.value} = $adjustedAskingPrice USD/oz",
+          "[TOTAL_AMOUNT_CALC] Processing product ID: $productId, quantity: $quantity",
           name: "GOLD_CALC");
-    } else if (product.pricingType == 'Discount' && product.value != null) {
-      // Apply discount directly to the asking price (in USD/oz)
-      adjustedAskingPrice -= product.value!.toDouble();
+
+      Product? product = productViewModel.productList.firstWhere(
+        (p) => p.pId == productId,
+      );
+
+      double adjustedAskingPrice = askingPrice;
+      if (product.pricingType == 'Premium' && product.value != null) {
+        adjustedAskingPrice += product.value!.toDouble();
+        dev.log(
+            "[TOTAL_AMOUNT_CALC] Applied product premium: $askingPrice + ${product.value} = $adjustedAskingPrice USD/oz",
+            name: "GOLD_CALC");
+      } else if (product.pricingType == 'Discount' && product.value != null) {
+        adjustedAskingPrice -= product.value!.toDouble();
+        dev.log(
+            "[TOTAL_AMOUNT_CALC] Applied product discount: $askingPrice - ${product.value} = $adjustedAskingPrice USD/oz",
+            name: "GOLD_CALC");
+      }
+
+      bidPrice = adjustedAskingPrice / 31.103 * 3.674;
       dev.log(
-          "[TOTAL_AMOUNT_CALC] Applied product discount: $askingPrice - ${product.value} = $adjustedAskingPrice USD/oz",
+          "[TOTAL_AMOUNT_CALC] Converting adjusted asking price to AED/g: $adjustedAskingPrice / 31.103 × 3.674 = $bidPrice AED/g",
+          name: "GOLD_CALC");
+
+      double productWeight = double.parse(product.weight.toStringAsFixed(3));
+      double purityFactor = calculatePurityPower(product.purity);
+      dev.log(
+          "[TOTAL_AMOUNT_CALC] Product $productId: weight=${productWeight}g, purity=${product.purity}, purity factor=$purityFactor",
+          name: "GOLD_CALC");
+
+      double baseUnitPrice = bidPrice * productWeight * purityFactor;
+      dev.log(
+          "[TOTAL_AMOUNT_CALC] Base unit price calculation: $bidPrice × $productWeight × $purityFactor  = $baseUnitPrice AED",
+          name: "GOLD_CALC");
+
+      double makingCharge = product.makingCharge.toDouble();
+      double unitPriceWithMaking = baseUnitPrice + makingCharge;
+      dev.log(
+          "[TOTAL_AMOUNT_CALC] After adding making charge: $baseUnitPrice + $makingCharge = $unitPriceWithMaking AED",
+          name: "GOLD_CALC");
+
+      double itemTotal = unitPriceWithMaking * quantity;
+      dev.log(
+          "[TOTAL_AMOUNT_CALC] Item total price: $unitPriceWithMaking × $quantity = $itemTotal AED",
+          name: "GOLD_CALC");
+
+      totalAmount += itemTotal;
+      dev.log(
+          "[TOTAL_AMOUNT_CALC] Running total after adding product $productId: $totalAmount AED",
           name: "GOLD_CALC");
     }
 
-    // Convert adjusted asking price from USD/oz to AED/g
-    bidPrice = adjustedAskingPrice / 31.103 * 3.674;
+    print(
+        "✅ [TOTAL_AMOUNT_CALC] Final total amount: ${totalAmount > 0 ? totalAmount : 0.0} AED");
+
     dev.log(
-        "[TOTAL_AMOUNT_CALC] Converting adjusted asking price to AED/g: $adjustedAskingPrice / 31.103 × 3.674 = $bidPrice AED/g",
+        "✅ [TOTAL_AMOUNT_CALC] Final total amount: ${totalAmount > 0 ? totalAmount : 0.0} AED",
         name: "GOLD_CALC");
 
-    // Maintain 3 digit precision for weight in calculations
-    double productWeight = double.parse(product.weight.toStringAsFixed(3));
-    double purityFactor = calculatePurityPower(product.purity);
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] Product $productId: weight=${productWeight}g, purity=${product.purity}, purity factor=$purityFactor",
-        name: "GOLD_CALC");
-
-    // Calculate base unit price
-    double baseUnitPrice = bidPrice * productWeight * purityFactor ;
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] Base unit price calculation: $bidPrice × $productWeight × $purityFactor  = $baseUnitPrice AED",
-        name: "GOLD_CALC");
-
-    // Add making charge
-    double makingCharge = product.makingCharge.toDouble();
-    double unitPriceWithMaking = baseUnitPrice + makingCharge;
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] After adding making charge: $baseUnitPrice + $makingCharge = $unitPriceWithMaking AED",
-        name: "GOLD_CALC");
-
-    // Calculate item total price
-    double itemTotal = unitPriceWithMaking * quantity;
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] Item total price: $unitPriceWithMaking × $quantity = $itemTotal AED",
-        name: "GOLD_CALC");
-
-    // Add to running total
-    totalAmount += itemTotal;
-    dev.log(
-        "[TOTAL_AMOUNT_CALC] Running total after adding product $productId: $totalAmount AED",
-        name: "GOLD_CALC");
+    return totalAmount > 0 ? totalAmount : 0.0;
   }
-
-  // Force a print statement which will always be visible - sometimes this works when log doesn't
-  print("✅ [TOTAL_AMOUNT_CALC] Final total amount: ${totalAmount > 0 ? totalAmount : 0.0} AED");
-  
-  // Use both logging methods to ensure visibility
-  dev.log(
-      "✅ [TOTAL_AMOUNT_CALC] Final total amount: ${totalAmount > 0 ? totalAmount : 0.0} AED",
-      name: "GOLD_CALC");
-  
-  return totalAmount > 0 ? totalAmount : 0.0;
-}
 
   double calculateBidPriceForDisplay(
       GoldRateProvider goldRateProvider, ProductViewModel productViewModel) {
@@ -244,12 +208,10 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
     double bidPrice = 0.0;
 
     if (goldRateProvider.goldData != null) {
-      // Get the original bid value
       originalBid =
           double.tryParse('${goldRateProvider.goldData!['bid']}') ?? 0.0;
       dev.log("🟡 Original bid from socket for display: $originalBid");
 
-      // Calculate askingPrice using spot rates if available
       if (goldRateProvider.spotRateData != null) {
         double bidSpread = goldRateProvider.spotRateData!.goldBidSpread;
         double askSpread = goldRateProvider.spotRateData!.goldAskSpread;
@@ -262,11 +224,10 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
         dev.log(
             "🧮 Display bid calculation step 2: Asking price = $biddingPrice (bidding price) + $askSpread (ask spread) + 0.5 = $askingPrice");
 
-        bidPrice = askingPrice / 31.103 * 3.674; // Convert to AED/g
+        bidPrice = askingPrice / 31.103 * 3.674;
         dev.log(
             "🧮 Display bid calculation step 3: Final price = $askingPrice / 31.103 × 3.674 = $bidPrice AED/g");
       } else {
-        // Fallback to original calculation if spot rate data is not available
         bidPrice = originalBid / 31.103 * 3.674;
         dev.log(
             "⚠️ Display bid using original bid (no spot rates): $originalBid / 31.103 × 3.674 = $bidPrice AED/g");
@@ -284,7 +245,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
       (p) => p.pId == productId,
     );
 
-    // Get original asking price
     double originalBid = 0.0;
     double askingPrice = 0.0;
 
@@ -303,7 +263,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
       }
     }
 
-    // Apply product-specific premium/discount to asking price (in USD/oz)
     double adjustedAskingPrice = askingPrice;
     if (product.pricingType == 'Premium' && product.value != null) {
       adjustedAskingPrice += product.value!.toDouble();
@@ -311,19 +270,15 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
       adjustedAskingPrice -= product.value!.toDouble();
     }
 
-    // Convert to AED/g
     double bidPrice = adjustedAskingPrice / 31.103 * 3.674;
 
-    // Get product details
     double productWeight = double.parse(product.weight.toStringAsFixed(3));
     double purityFactor = calculatePurityPower(product.purity);
 
-    // Calculate base price
     double basePrice = bidPrice * purityFactor * productWeight;
     dev.log(
         "Product $productId base price: $bidPrice × $purityFactor × $productWeight = $basePrice AED");
 
-    // Add making charge
     double priceWithMakingCharge = basePrice + product.makingCharge.toDouble();
 
     return priceWithMakingCharge;
@@ -369,11 +324,10 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
 
     final isGoldPayment = widget.orderData["paymentMethod"] == 'Gold';
     final totalWeight = calculateTotalWeight(productViewModel);
-    // Remove the hardcoded +16
+
     final totalAmount =
         calculateTotalAmount(productViewModel, goldRateProvider);
 
-    // Get the bidPrice for display - using the same calculation as in calculateTotalAmount
     double bidPrice =
         calculateBidPriceForDisplay(goldRateProvider, productViewModel);
 
@@ -442,16 +396,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                           color: UIColor.gold,
                           fontFamily: 'Familiar',
                           fontSize: 20.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        'Bid Price: ${formatNumber(bidPrice)}',
-                        style: TextStyle(
-                          color: UIColor.gold,
-                          fontFamily: 'Familiar',
-                          fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -579,54 +523,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                         ),
                       ],
                     ),
-                    if (isGoldPayment) ...[
-                      SizedBox(height: 12.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total Gold Weight:',
-                            style: TextStyle(
-                              color: UIColor.gold,
-                              fontFamily: 'Familiar',
-                              fontSize: 16.sp,
-                            ),
-                          ),
-                          Text(
-                            '${formatNumber(totalWeight)} g',
-                            style: TextStyle(
-                              color: UIColor.gold,
-                              fontFamily: 'Familiar',
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Gold Bid Price:',
-                            style: TextStyle(
-                              color: UIColor.gold,
-                              fontFamily: 'Familiar',
-                              fontSize: 16.sp,
-                            ),
-                          ),
-                          Text(
-                            bidPrice > 0 ? formatNumber(bidPrice) : 'N/A',
-                            style: TextStyle(
-                              color: UIColor.gold,
-                              fontFamily: 'Familiar',
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                     if (!isGoldPayment) ...[
                       SizedBox(height: 12.h),
                       Row(
@@ -652,31 +548,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                         ],
                       ),
                     ],
-                    // if (widget.orderData.containsKey('discount')) ...[
-                    //   SizedBox(height: 12.h),
-                    //   Row(
-                    //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    //     children: [
-                    //       Text(
-                    //         'Discount Applied:',
-                    //         style: TextStyle(
-                    //           color: UIColor.gold,
-                    //           fontFamily: 'Familiar',
-                    //           fontSize: 16.sp,
-                    //         ),
-                    //       ),
-                    //       Text(
-                    //         'AED ${double.tryParse(widget.orderData['discount'] ?? '0') != null ? formatNumber(double.parse(widget.orderData['discount'])) : widget.orderData['discount']}',
-                    //         style: TextStyle(
-                    //           color: UIColor.gold,
-                    //           fontFamily: 'Familiar',
-                    //           fontSize: 16.sp,
-                    //           fontWeight: FontWeight.bold,
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ],
                   ],
                 ),
               ),
@@ -691,7 +562,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                 ),
               ),
               SizedBox(height: 12.h),
-              // Update the ListView.builder itemBuilder to correctly display product pricing
               ListView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
@@ -712,7 +582,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                   dev.log(
                       "📊 Product #$index - Weight: $productWeight g, Purity: $productPurity, Making Charge: $makingCharge AED");
 
-                  // Get original asking price
                   double originalBid = 0.0;
                   double biddingPrice = 0.0;
                   double askingPrice = 0.0;
@@ -739,7 +608,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                     }
                   }
 
-                  // Apply product-specific adjustments to asking price before conversion
                   double adjustedAskingPrice = askingPrice;
                   if (product != null) {
                     if (product.pricingType == 'Premium' &&
@@ -755,7 +623,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                     }
                   }
 
-                  // Convert to AED/g
                   final productBidPrice = adjustedAskingPrice / 31.103 * 3.674;
                   dev.log(
                       "🧮 Product #$index - Converted rate: $adjustedAskingPrice / 31.103 × 3.674 = $productBidPrice AED/g");
@@ -764,18 +631,15 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                   dev.log(
                       "🧮 Product #$index - Purity factor: $purityFactor (calculated from $productPurity)");
 
-                  // Calculate base price with the adjusted rate
                   final basePrice =
-                      productBidPrice * productWeight * purityFactor ;
+                      productBidPrice * productWeight * purityFactor;
                   dev.log(
                       "🧮 Product #$index - Base price calculation: $productBidPrice × $purityFactor × $productWeight  = $basePrice AED");
 
-                  // Add making charge to get unit price
                   final unitPrice = basePrice + makingCharge;
                   dev.log(
                       "🧮 Product #$index - Unit price calculation: $basePrice + $makingCharge = $unitPrice AED");
 
-                  // Calculate item total value
                   final itemValue = unitPrice * quantity;
                   dev.log(
                       "🧾 Product #$index - Item total calculation: $unitPrice × $quantity = $itemValue AED");
@@ -859,7 +723,7 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                               ),
                             ),
                             Text(
-                              '${formatNumber(productPurity)}K',
+                              productPurity.toInt().toString(),
                               style: TextStyle(
                                 color: UIColor.gold,
                                 fontFamily: 'Familiar',
@@ -892,75 +756,53 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                           ],
                         ),
                         SizedBox(height: 4.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Base Price:',
-                              style: TextStyle(
-                                color: UIColor.gold,
-                                fontFamily: 'Familiar',
-                                fontSize: 14.sp,
+                        if (!isGoldPayment) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Base Price:',
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontFamily: 'Familiar',
+                                  fontSize: 14.sp,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'AED ${formatNumber(basePrice)}',
-                              style: TextStyle(
-                                color: UIColor.gold,
-                                fontFamily: 'Familiar',
-                                fontSize: 14.sp,
+                              Text(
+                                'AED ${formatNumber(basePrice)}',
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontFamily: 'Familiar',
+                                  fontSize: 14.sp,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        // if (makingCharge > 0) ...[
-                        //   SizedBox(height: 4.h),
-                        //   Row(
-                        //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        //     children: [
-                        //       Text(
-                        //         'Making Charge:',
-                        //         style: TextStyle(
-                        //           color: UIColor.gold,
-                        //           fontFamily: 'Familiar',
-                        //           fontSize: 14.sp,
-                        //         ),
-                        //       ),
-                        //       Text(
-                        //         'AED ${formatNumber(makingCharge)}',
-                        //         style: TextStyle(
-                        //           color: UIColor.gold,
-                        //           fontFamily: 'Familiar',
-                        //           fontSize: 14.sp,
-                        //         ),
-                        //       ),
-                        //     ],
-                        //   ),
-                        // ],
-                        SizedBox(height: 4.h),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Item Total:',
-                              style: TextStyle(
-                                color: UIColor.gold,
-                                fontFamily: 'Familiar',
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
+                            ],
+                          ),
+                          SizedBox(height: 4.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Item Total:',
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontFamily: 'Familiar',
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'AED ${formatNumber(itemValue)}',
-                              style: TextStyle(
-                                color: UIColor.gold,
-                                fontFamily: 'Familiar',
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
+                              Text(
+                                'AED ${formatNumber(itemValue)}',
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontFamily: 'Familiar',
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ]
                       ],
                     ),
                   );
@@ -1011,28 +853,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                               fontFamily: 'Familiar',
                               fontSize: 18.sp,
                               fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'At Bid Price:',
-                            style: TextStyle(
-                              color: UIColor.gold,
-                              fontFamily: 'Familiar',
-                              fontSize: 16.sp,
-                            ),
-                          ),
-                          Text(
-                            bidPrice > 0 ? formatNumber(bidPrice) : 'N/A',
-                            style: TextStyle(
-                              color: UIColor.gold,
-                              fontFamily: 'Familiar',
-                              fontSize: 16.sp,
                             ),
                           ),
                         ],
@@ -1095,7 +915,7 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                       final goldRateProvider =
                           Provider.of<GoldRateProvider>(context, listen: false);
 
-                      // Get the original bid value and calculate asking price
+                      // Calculate gold rate
                       double originalBid = 0.0;
                       double biddingPrice = 0.0;
                       double askingPrice = 0.0;
@@ -1115,27 +935,16 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                               goldRateProvider.spotRateData!.goldAskSpread;
 
                           biddingPrice = originalBid + bidSpread;
-                          dev.log(
-                              "🧮 Order submission - Step 1: Bidding price = $originalBid + $bidSpread = $biddingPrice");
-
                           askingPrice = biddingPrice + askSpread + 0.5;
-                          dev.log(
-                              "🧮 Order submission - Step 2: Asking price = $biddingPrice + $askSpread + 0.5 = $askingPrice");
-
-                          bidPrice = askingPrice /
-                              31.103 *
-                              3.674; // Base rate for display
-                          dev.log(
-                              "🧮 Order submission - Step 3: Base bid price = $askingPrice / 31.103 × 3.674 = $bidPrice AED/g");
+                          bidPrice = askingPrice / 31.103 * 3.674;
                         } else {
                           bidPrice = originalBid / 31.103 * 3.674;
                           askingPrice = originalBid;
-                          dev.log(
-                              "⚠️ Order submission - Using original bid (no spot rates): $originalBid / 31.103 × 3.674 = $bidPrice AED/g");
                         }
                       }
 
-                      List<Map<String, dynamic>> bookingDataWithFixedPrices =
+                      // Format booking data according to the new structure
+                      List<Map<String, dynamic>> bookingDataWithMakingCharges =
                           [];
                       List bookingData =
                           widget.orderData["bookingData"] as List;
@@ -1149,106 +958,46 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                           (p) => p.pId == productId,
                         );
 
-                        // Get product-specific information
-                        double productWeight = product.weight.toDouble();
-                        double productPurity = product.purity.toDouble();
-                        double purityFactor =
-                            calculatePurityPower(productPurity);
-                        double makingCharge = product.makingCharge.toDouble();
-
-                        dev.log(
-                            "📦 Order item - Product ID: $productId, Weight: $productWeight g, Purity: $productPurity, PurityFactor: $purityFactor, Making: $makingCharge AED");
-
-                        // Apply premium/discount to asking price (in USD/oz) BEFORE conversion
-                        double adjustedAskingPrice = askingPrice;
-                        if (product.pricingType == 'Premium' &&
-                            product.value != null) {
-                          adjustedAskingPrice += product.value!.toDouble();
-                          dev.log(
-                              "💰 Order item - Premium applied to asking price: $askingPrice + ${product.value} = $adjustedAskingPrice USD/oz");
-                        } else if (product.pricingType == 'Discount' &&
-                            product.value != null) {
-                          adjustedAskingPrice -= product.value!.toDouble();
-                          dev.log(
-                              "💸 Order item - Discount applied to asking price: $askingPrice - ${product.value} = $adjustedAskingPrice USD/oz");
+                        // For each product in the quantity, add a separate entry
+                        for (int i = 0; i < quantity; i++) {
+                          bookingDataWithMakingCharges.add({
+                            "productId": productId,
+                            "makingCharge": product.makingCharge.toDouble()
+                          });
                         }
-
-                        // Convert adjusted asking price to AED/g
-                        double productBidPrice =
-                            adjustedAskingPrice / 31.103 * 3.674;
-                        dev.log(
-                            "🧮 Order item - Adjusted bid price: $adjustedAskingPrice / 31.103 × 3.674 = $productBidPrice AED/g");
-
-                        // Calculate base price with adjusted rate
-                        double basePrice =
-                            productBidPrice * purityFactor * productWeight;
-                        dev.log(
-                            "🧮 Order item - Base price calculation: $productBidPrice × $purityFactor × $productWeight = $basePrice AED");
-
-                        // Add making charge for final price
-                        double fixedPrice = basePrice + makingCharge;
-                        dev.log(
-                            "🧮 Order item - Fixed price calculation: $basePrice + $makingCharge = $fixedPrice AED");
-
-                        int roundedPrice = fixedPrice.round();
-                        dev.log(
-                            "💵 Order item - Final rounded price: $fixedPrice → $roundedPrice AED × $quantity");
-
-                        bookingDataWithFixedPrices.add({
-                          "productId": productId,
-                          "quantity": quantity,
-                          "fixedPrice": roundedPrice,
-                        });
                       }
 
-                      Map<String, dynamic> fixPricePayload = {
-                        "bookingData": bookingDataWithFixedPrices,
-                        "goldRate":
-                            bidPrice, // Use base display rate for the order
+                      // Create the payload
+                      final bookingPayload = {
+                        "paymentMethod": widget.orderData["paymentMethod"],
+                        "bookingData": bookingDataWithMakingCharges,
+                        "deliveryDate": widget.orderData["deliveryDate"],
+                        "address": widget.orderData["address"],
+                        "contact": widget.orderData["contact"]
                       };
 
-                      dev.log(
-                          "Fix price payload: ${jsonEncode(fixPricePayload)}");
+                      dev.log("Booking payload: ${jsonEncode(bookingPayload)}");
 
-                      final fixPriceResult =
-                          await productViewModel.fixPrice(fixPricePayload);
+                      // Call the booking API directly
+                      final bookingResult =
+                          await productViewModel.bookProducts(bookingPayload);
 
-                      if (fixPriceResult != null && fixPriceResult.success!) {
-                        final bookingPayload = {
-                          ...widget.orderData,
-                          "bookingData": bookingDataWithFixedPrices,
-                          "goldRate": bidPrice,
-                          "fixedAt": DateTime.now().toIso8601String(),
-                        };
+                      Navigator.of(context).pop(); // Close loading dialog
 
-                        final bookingResult =
-                            await productViewModel.bookProducts(bookingPayload);
+                      if (bookingResult != null && bookingResult.success!) {
+                        productViewModel.clearQuantities();
 
-                        Navigator.of(context).pop();
+                        widget.onConfirm(
+                            {"success": true, "bookingData": bookingResult});
 
-                        if (bookingResult != null && bookingResult.success!) {
-                          productViewModel.clearQuantities();
+                        showOrderStatusSnackBar(
+                          context: context,
+                          isSuccess: true,
+                          message: 'Booking success',
+                        );
 
-                          widget.onConfirm(
-                              {"success": true, "bookingData": bookingResult});
-
-                          showOrderStatusSnackBar(
-                            context: context,
-                            isSuccess: true,
-                            message: 'Booking success',
-                          );
-
-                          Navigator.pop(context);
-                        } else {
-                          showOrderStatusSnackBar(
-                            context: context,
-                            isSuccess: false,
-                            message: 'Booking failed',
-                          );
-                        }
+                        Navigator.pop(context);
                       } else {
-                        Navigator.of(context).pop();
-
                         showOrderStatusSnackBar(
                           context: context,
                           isSuccess: false,
@@ -1267,7 +1016,7 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                           backgroundColor: Colors.red,
                         ),
                       );
-                    }
+                    } 
                   },
                   btnTextColor: UIColor.gold,
                   btnText: 'Confirm Order',

@@ -1,0 +1,2 @@
+D:/Aurify/swiss_gold/android/app/.cxx/RelWithDebInfo/4q3o5850/x86/CMakeFiles/edit_cache.dir
+D:/Aurify/swiss_gold/android/app/.cxx/RelWithDebInfo/4q3o5850/x86/CMakeFiles/rebuild_cache.dir

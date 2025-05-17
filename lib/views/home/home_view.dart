@@ -529,83 +529,102 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
                         return Column(
                           children: [
-                           ListView.builder(
-  physics: BouncingScrollPhysics(),
-  key: PageStorageKey('productKey'),
-  shrinkWrap: true,
-  itemCount: model.productList.length,
-  itemBuilder: (context, index) {
-    final product = model.productList[index];
+                            ListView.builder(
+                              physics: BouncingScrollPhysics(),
+                              key: PageStorageKey('productKey'),
+                              shrinkWrap: true,
+                              itemCount: model.productList.length,
+                              itemBuilder: (context, index) {
+                                final product = model.productList[index];
 
-    final String productId = product.pId;
-    final String imageUrl = product.prodImgs.isNotEmpty
-        ? product.prodImgs[0].url
-        : 'https://via.placeholder.com/150';
-    final String title = product.title;
-    final int quantity = productQuantities[index] ?? 0;
-    final String price = product.type?.toLowerCase() == 'gold'
-        ? 'AED ${(model.goldSpotRate ?? 0).toStringAsFixed(2)}'
-        : 'AED ${(product.price).toStringAsFixed(2)}';
-    final String productType = product.type ?? 'Unknown';
+                                final String productId = product.pId;
+                                final String imageUrl =
+                                    product.prodImgs.isNotEmpty
+                                        ? product.prodImgs[0].url
+                                        : 'https://via.placeholder.com/150';
+                                final String title = product.title;
+                                final int quantity =
+                                    productQuantities[index] ?? 0;
+                                final String price = product.type
+                                            ?.toLowerCase() ==
+                                        'gold'
+                                    ? 'AED ${(model.goldSpotRate ?? 0).toStringAsFixed(2)}'
+                                    : 'AED ${(product.price).toStringAsFixed(2)}';
+                                final String productType =
+                                    product.type ?? 'Unknown';
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: 16.h),
-      child: CustomCard(
-        onIncrement: () => incrementQuantity(index),
-        onDecrement: () => decrementQuantity(index),
-        onQuantityEntered: (newQuantity) => updateQuantityDirectly(index, newQuantity),
-        onAddToCart: () {
-          if (model.isGuest == false) {
-            context.read<CartViewModel>().updateQuantityFromHome(productId, {
-              'quantity': productQuantities[index] ?? 1
-            }).then((response) {
-              if (response?.success == true) {
-                setState(() {
-                  productQuantities.remove(index);
-                });
-                context.read<ProductViewModel>().getTotalQuantity(
-                    Map<int, int>.from(productQuantities));
-              }
-              customSnackBar(
-                context: context,
-                width: 250.w,
-                bgColor: UIColor.gold,
-                title: response?.message?.toString() ?? 'Action completed',
-              );
-            });
-          } else {
-            Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => LoginView()),
-                (route) => false);
-          }
-        },
-        prodImg: imageUrl,
-        title: title,
-        quantity: quantity,
-        price: price,
-        subTitle: productType,
-        onTap: () {
-          navigateWithAnimationTo(
-              context,
-              ProductView(
-                prodImg: product.prodImgs.map((e) => e.url).toList(),
-                title: title,
-                pId: productId,
-                desc: product.desc,
-                type: productType,
-                stock: product.stock,
-                purity: product.purity,
-                weight: product.weight,
-                makingCharge: product.makingCharge,
-              ),
-              0,
-              1);
-        },
-      ),
-    );
-  },
-),
+                                return Padding(
+                                  padding: EdgeInsets.only(bottom: 16.h),
+                                  child: CustomCard(
+                                    onIncrement: () => incrementQuantity(index),
+                                    onDecrement: () => decrementQuantity(index),
+                                    onQuantityEntered: (newQuantity) =>
+                                        updateQuantityDirectly(
+                                            index, newQuantity),
+                                    onAddToCart: () {
+                                      if (model.isGuest == false) {
+                                        context
+                                            .read<CartViewModel>()
+                                            .updateQuantityFromHome(productId, {
+                                          'quantity':
+                                              productQuantities[index] ?? 1
+                                        }).then((response) {
+                                          if (response?.success == true) {
+                                            setState(() {
+                                              productQuantities.remove(index);
+                                            });
+                                            context
+                                                .read<ProductViewModel>()
+                                                .getTotalQuantity(
+                                                    Map<int, int>.from(
+                                                        productQuantities));
+                                          }
+                                          customSnackBar(
+                                            context: context,
+                                            width: 250.w,
+                                            bgColor: UIColor.gold,
+                                            title:
+                                                response?.message?.toString() ??
+                                                    'Action completed',
+                                          );
+                                        });
+                                      } else {
+                                        Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    LoginView()),
+                                            (route) => false);
+                                      }
+                                    },
+                                    prodImg: imageUrl,
+                                    title: title,
+                                    quantity: quantity,
+                                    price: price,
+                                    subTitle: productType,
+                                    onTap: () {
+                                      navigateWithAnimationTo(
+                                          context,
+                                          ProductView(
+                                            prodImg: product.prodImgs
+                                                .map((e) => e.url)
+                                                .toList(),
+                                            title: title,
+                                            pId: productId,
+                                            desc: product.desc,
+                                            type: productType,
+                                            stock: product.stock,
+                                            purity: product.purity,
+                                            weight: product.weight,
+                                            makingCharge: product.makingCharge,
+                                          ),
+                                          0,
+                                          1);
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
                             if (model.state == ViewState.loadingMore)
                               Padding(
                                 padding: EdgeInsets.only(top: 20.h),

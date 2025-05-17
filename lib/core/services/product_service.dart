@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as IO; 
 import 'package:http/http.dart' as http;
 import 'package:swiss_gold/core/models/message.dart';
 import 'package:swiss_gold/core/services/local_storage.dart';
@@ -329,41 +329,60 @@ static Future<List<dynamic>> fetchProducts([String? adminId, String? categoryId]
   }
 
   static Future<MessageModel?> bookProducts(
-      Map<String, dynamic> payload) async {
-    try {
-      final id = await LocalStorage.getString('userId');
-      if (id == null || id.isEmpty) {
-        log('Error: userId is empty');
-        return MessageModel.fromJson(
-            {'success': false, 'message': 'User ID is missing'});
-      }
-
-      final url = bookingUrl.replaceFirst('{userId}', id.toString());
-      log('Booking products with URL: $url');
-      log('Booking payload: ${payload.toString()}');
-
-      var response = await client.post(Uri.parse(url),
-          headers: {
-            'X-Secret-Key': secreteKey,
-            'Content-Type': 'application/json'
-          },
-          body: jsonEncode(payload));
-
-      log('Booking response status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        Map<String, dynamic> responseData = jsonDecode(response.body);
-        return MessageModel.fromJson(responseData);
-      } else {
-        log('Booking error response: ${response.body}');
-        Map<String, dynamic> responseData = jsonDecode(response.body);
-        return MessageModel.fromJson(responseData);
-      }
-    } catch (e) {
-      log('Error booking products: ${e.toString()}');
-      return null;
+    Map<String, dynamic> payload) async {
+  try {
+    final id = await LocalStorage.getString('userId');
+    if (id == null || id.isEmpty) {
+      log('Error: userId is empty');
+      return MessageModel.fromJson(
+          {'success': false, 'message': 'User ID is missing'});
     }
+
+    // Format the booking data to match the expected structure
+    final List<Map<String, dynamic>> bookingData = 
+        (payload["bookingData"] as List).map((item) {
+      return {
+        "productId": item["productId"],
+        "makingCharge": item["fixedPrice"] ?? item["makingCharge"] ?? 0.0
+      };
+    }).toList(); 
+
+    // Prepare the updated payload
+    final Map<String, dynamic> formattedPayload = {
+      "paymentMethod": payload["paymentMethod"],
+      "bookingData": bookingData,
+      // Optional fields that might be needed
+      "deliveryDate": payload["deliveryDate"],
+      "address": payload["address"],
+      "contact": payload["contact"]
+    };
+
+    final url = bookingUrl.replaceFirst('{userId}', id.toString());
+    log('Booking products with URL: $url');
+    log('Formatted booking payload: ${formattedPayload.toString()}');
+
+    var response = await client.post(Uri.parse(url),
+        headers: {
+          'X-Secret-Key': secreteKey,
+          'Content-Type': 'application/json'
+        },
+        body: jsonEncode(formattedPayload));
+
+    log('Booking response status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+      return MessageModel.fromJson(responseData);
+    } else {
+      log('Booking error response: ${response.body}');
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+      return MessageModel.fromJson(responseData);
+    }
+  } catch (e) {
+    log('Error booking products: ${e.toString()}');
+    return null;
   }
+}
 
   static void dispose() {
     _socket?.disconnect();
