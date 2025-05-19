@@ -55,7 +55,7 @@ const String confirmQuantityUrl = '$newBaseUrl/order_quantity_confirmation';
 const String getOrderHistoryUrl =
     '$newBaseUrl/fetch-order/$adminId/{userId}?page={index}&orderStatus={status}';
 
-const String getSpotRateUrl = 'https://api.aurify.ae/user/get-spotrates/67586119baf55a80a8277f01';
+// const String getSpotRateUrl = 'https://api.aurify.ae/user/get-spotrates/67586119baf55a80a8277f01';
 
 const String updateQuantityFromHomeUrl =
     '$baseUrl/cart/update-quantity/$adminId/{userId}/{pId}';

@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
+import 'package:swiss_gold/core/utils/endpoint.dart';
 import '../models/spot_rate_model.dart';
-// import '../core/services/secrete_key.dart';
 import 'secrete_key.dart';
 
 class SpotRateService {
@@ -27,6 +27,7 @@ class SpotRateService {
     log('Fetching spot rates from API for adminId: $adminId');
     
     try {
+      // Use the correct URL format with _baseUrl
       final response = await http.get(
         Uri.parse('$_baseUrl/get-spotrates/$adminId'),
         headers: {
@@ -36,6 +37,7 @@ class SpotRateService {
       );
 
       log('Spot rate API response status: ${response.statusCode}');
+      log('Spot rate API response body: ${response.body}');  // Add this line to debug response
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -51,8 +53,8 @@ class SpotRateService {
           
           return _cachedSpotRate!;
         } else {
-          log('API returned success=false or missing info: ${data['message']}');
-          throw Exception('Failed to load spot rates: ${data['message']}');
+          log('API returned success=false or missing info: ${data['message'] ?? "Unknown error"}');
+          throw Exception('Failed to load spot rates: ${data['message'] ?? "Unknown error"}');
         }
       } else {
         log('API error: ${response.statusCode} - ${response.body}');

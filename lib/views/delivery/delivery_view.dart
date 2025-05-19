@@ -146,17 +146,14 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
       );
 
       double adjustedAskingPrice = askingPrice;
-      if (product.pricingType == 'Premium' && product.value != null) {
+      if (product.pricingType == 'Premium' && product.value != null ||product.pricingType == 'Discount' && product.value != null ) {
         adjustedAskingPrice += product.value!.toDouble();
+        dev.log("==========================================================>>>>>>        ${product.value}");
+
         dev.log(
             "[TOTAL_AMOUNT_CALC] Applied product premium: $askingPrice + ${product.value} = $adjustedAskingPrice USD/oz",
             name: "GOLD_CALC");
-      } else if (product.pricingType == 'Discount' && product.value != null) {
-        adjustedAskingPrice -= product.value!.toDouble();
-        dev.log(
-            "[TOTAL_AMOUNT_CALC] Applied product discount: $askingPrice - ${product.value} = $adjustedAskingPrice USD/oz",
-            name: "GOLD_CALC");
-      }
+      } 
 
       bidPrice = adjustedAskingPrice / 31.103 * 3.674;
       dev.log(

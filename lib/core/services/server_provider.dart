@@ -31,7 +31,7 @@ class GoldRateProvider extends ChangeNotifier {
   // Set admin ID
   set adminId(String id) {
     _adminId = id;
-    fetchSpotRates();
+    // fetchSpotRates();
   }
 
   // Constructor
@@ -54,9 +54,9 @@ class GoldRateProvider extends ChangeNotifier {
       await connectToSocket(link: _serverLink);
       
       // Fetch spot rates if admin ID is available
-      if (_adminId.isNotEmpty) {
-        await fetchSpotRates();
-      }
+      // if (_adminId.isNotEmpty) {
+      //   await fetchSpotRates();
+      // }
     } catch (e) {
       dev.log("Error initializing connection: $e");
       await connectToSocket(link: _serverLink);
@@ -189,38 +189,38 @@ class GoldRateProvider extends ChangeNotifier {
   }
 
   // Fetch spot rates from the server
-  Future<void> fetchSpotRates() async {
-    if (_adminId.isEmpty) {
-      dev.log('Admin ID not provided. Cannot fetch spot rates.');
-      return;
-    }
+  // Future<void> fetchSpotRates() async {
+  //   if (_adminId.isEmpty) {
+  //     dev.log('Admin ID not provided. Cannot fetch spot rates.');
+  //     return;
+  //   }
     
-    dev.log('Fetching spot rates for admin ID: $_adminId');
-    try {
-      _spotRateData = await SpotRateService.getSpotRates(_adminId);
-      dev.log('Spot rates fetched successfully. Ask Spread: ${_spotRateData?.goldAskSpread}, Bid Spread: ${_spotRateData?.goldBidSpread}');
+  //   dev.log('Fetching spot rates for admin ID: $_adminId');
+  //   try {
+  //     _spotRateData = await SpotRateService.getSpotRates(_adminId);
+  //     dev.log('Spot rates fetched successfully. Ask Spread: ${_spotRateData?.goldAskSpread}, Bid Spread: ${_spotRateData?.goldBidSpread}');
       
-      // Recalculate prices with new data
-      if (_goldData != null) {
-        // Log updated calculations
-        double? bid = _goldData!['bid'] is num ? (_goldData!['bid'] as num).toDouble() : null;
+  //     // Recalculate prices with new data
+  //     if (_goldData != null) {
+  //       // Log updated calculations
+  //       double? bid = _goldData!['bid'] is num ? (_goldData!['bid'] as num).toDouble() : null;
         
-        if (bid != null) {
-          double biddingPrice = bid + _spotRateData!.goldBidSpread;
-          double askingPrice = biddingPrice + _spotRateData!.goldAskSpread + 0.5;
+  //       if (bid != null) {
+  //         double biddingPrice = bid + _spotRateData!.goldBidSpread;
+  //         double askingPrice = biddingPrice + _spotRateData!.goldAskSpread + 0.5;
           
-          dev.log('Updated Calculated Prices:');
-          dev.log('Original Bid: $bid');
-          dev.log('Bidding Price: $biddingPrice (Bid + Bid Spread: ${_spotRateData!.goldBidSpread})');
-          dev.log('Asking Price: $askingPrice (Bidding Price + Ask Spread: ${_spotRateData!.goldAskSpread} + 0.5)');
-        }
-      }
+  //         dev.log('Updated Calculated Prices:');
+  //         dev.log('Original Bid: $bid');
+  //         dev.log('Bidding Price: $biddingPrice (Bid + Bid Spread: ${_spotRateData!.goldBidSpread})');
+  //         dev.log('Asking Price: $askingPrice (Bidding Price + Ask Spread: ${_spotRateData!.goldAskSpread} + 0.5)');
+  //       }
+  //     }
       
-      notifyListeners();
-    } catch (e) {
-      dev.log('Error fetching spot rates: $e');
-    }
-  }
+  //     notifyListeners();
+  //   } catch (e) {
+  //     dev.log('Error fetching spot rates: $e');
+  //   }
+  // }
 
   // Request only gold data from the server
   void requestGoldData() {
@@ -285,9 +285,9 @@ class GoldRateProvider extends ChangeNotifier {
     }
     
     // Refresh spot rates if admin ID is available
-    if (_adminId.isNotEmpty) {
-      await fetchSpotRates();
-    }
+    // if (_adminId.isNotEmpty) {
+    //   await fetchSpotRates();
+    // }
     
     requestGoldData();
     

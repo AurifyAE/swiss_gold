@@ -65,7 +65,7 @@ class ProductService {
   static Future<double?> getSpotRate() async {
     try {
       var response = await client.get(
-        Uri.parse(getSpotRateUrl),
+        Uri.parse('$newBaseUrl/get-spotrates/$adminId'),
         headers: {
           'X-Secret-Key': secreteKey,
           'Content-Type': 'application/json'
