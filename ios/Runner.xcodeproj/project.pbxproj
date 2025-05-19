@@ -161,7 +161,6 @@
 				3E4D5B386F0ECBA5CD23798B /* Pods-RunnerTests.release.xcconfig */,
 				5381C877C2C3E1DADD9669CD /* Pods-RunnerTests.profile.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -495,6 +494,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PACKAGE_CONFIG = "Pods/Target Support Files/Pods-Runner/Pods-Runner.xcconfig\n";
 				PRODUCT_BUNDLE_IDENTIFIER = com.tecnavis.swissgold;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -605,6 +605,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				PACKAGE_CONFIG = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -677,6 +678,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PACKAGE_CONFIG = "Pods/Target Support Files/Pods-Runner/Pods-Runner.xcconfig\n";
 				PRODUCT_BUNDLE_IDENTIFIER = com.tecnavis.swissgold;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
@@ -699,6 +701,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PACKAGE_CONFIG = "Pods/Target Support Files/Pods-Runner/Pods-Runner.xcconfig\n";
 				PRODUCT_BUNDLE_IDENTIFIER = com.tecnavis.swissgold;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
