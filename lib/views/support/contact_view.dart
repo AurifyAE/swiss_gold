@@ -94,85 +94,82 @@ class _ContactViewState extends State<ContactView> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-        padding: EdgeInsets.symmetric(vertical: 15.h),
-        child:
-            Consumer<CompanyProfileViewModel>(builder: (context, model, child) {
-          if (model.state == ViewState.loading) {
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(
-                    3,
-                    (index) => CategoryShimmer(),
-                  )),
-            );
-          } else if (model.companyProfileModel == null) {
-            return SizedBox.shrink();
-          } else {
-            return Column(
+    return Consumer<CompanyProfileViewModel>(builder: (context, model, child) {
+              if (model.state == ViewState.loading) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(
+            3,
+            (index) => CategoryShimmer(),
+          )),
+    );
+              } else if (model.companyProfileModel == null) {
+    return SizedBox.shrink();
+              } else {
+    return Column(
+      children: [
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.53,
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Column(
               children: [
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.53,
-                  child: SingleChildScrollView(
-                    physics: NeverScrollableScrollPhysics(),
-                    child: Column(
-                      children: [
-                        isVideoInitialized?
-                        CustomVideoPlayer(
-                          customVideoPlayerController: controller,
-                        ):Center(
-                          heightFactor: 15.h,
-                          child: CircularProgressIndicator(color: UIColor.gold,),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Spacer(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                   ContactCard(
-  icon: ImageAssets.whatsapp,
-  title: 'Whatsapp',
-  onTap: () async {
-    if (model.companyProfileModel?.userDetails.contact != null) {
-      await openUrl(
-          'https://wa.me/${model.companyProfileModel!.userDetails.contact}');
-    }
-  },
-),
-ContactCard(
-  icon: ImageAssets.gmail,
-  title: 'Gmail',
-  onTap: () async {
-    if (model.companyProfileModel?.userDetails.email != null && 
-        model.companyProfileModel!.userDetails.email.isNotEmpty) {
-      await openUrl(
-          'mailto:${model.companyProfileModel!.userDetails.email}');
-    }
-  },
-),
-ContactCard(
-  icon: ImageAssets.phone,
-  title: 'Contact',
-  onTap: () {
-    if (model.companyProfileModel?.userDetails.contact != null) {
-      openUrl(
-          'tel:${model.companyProfileModel!.userDetails.contact.toString()}');
-    }
-  },
-),
-                  ],
-                ),
-                SizedBox(
-                  height: 30.h,
+                isVideoInitialized?
+                CustomVideoPlayer(
+                  customVideoPlayerController: controller,
+                ):Center(
+                  heightFactor: 15.h,
+                  child: CircularProgressIndicator(color: UIColor.gold,),
                 ),
               ],
-            );
-          }
-        }));
+            ),
+          ),
+        ),
+        Spacer(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+           ContactCard(
+      icon: ImageAssets.whatsapp,
+      title: 'Whatsapp',
+      onTap: () async {
+        if (model.companyProfileModel?.userDetails.contact != null) {
+          await openUrl(
+              'https://wa.me/${model.companyProfileModel!.userDetails.contact}');
+        }
+      },
+    ),
+    ContactCard(
+      icon: ImageAssets.gmail,
+      title: 'Gmail',
+      onTap: () async {
+        if (model.companyProfileModel?.userDetails.email != null && 
+            model.companyProfileModel!.userDetails.email.isNotEmpty) {
+          await openUrl(
+              'mailto:${model.companyProfileModel!.userDetails.email}');
+        }
+      },
+    ),
+    ContactCard(
+      icon: ImageAssets.phone,
+      title: 'Contact',
+      onTap: () {
+        if (model.companyProfileModel?.userDetails.contact != null) {
+          openUrl(
+              'tel:${model.companyProfileModel!.userDetails.contact.toString()}');
+        }
+      },
+    ),
+          ],
+        ),
+        SizedBox(
+          height: 30.h,
+        ),
+      ],
+    );
+              }
+            });
   }
 }
