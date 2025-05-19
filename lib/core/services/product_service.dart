@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'package:socket_io_client/socket_io_client.dart' as IO; 
+import 'package:socket_io_client/socket_io_client.dart' as io; 
 import 'package:http/http.dart' as http;
 import 'package:swiss_gold/core/models/message.dart';
 import 'package:swiss_gold/core/services/local_storage.dart';
@@ -15,11 +15,11 @@ class ProductService {
   static Stream<Map<String, dynamic>> get marketDataStream =>
       _marketDataStreamController.stream;
 
-  static IO.Socket? _socket;
+  static io.Socket? _socket;
 
   static Future<Map<String, dynamic>?> initializeSocketConnection() async {
     final link = await getServer();
-    _socket = IO.io(link, {
+    _socket = io.io(link, {
       'transports': ['websocket'],
       'autoConnect': false,
       'query': {

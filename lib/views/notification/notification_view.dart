@@ -1,14 +1,15 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/services/notification_provider.dart';
 import 'widgets/notification_detail.dart';
 
 class NotificationView extends StatefulWidget {
-  const NotificationView({Key? key}) : super(key: key);
+  const NotificationView({super.key});
 
   @override
   State<NotificationView> createState() => _NotificationViewState();
@@ -212,6 +213,7 @@ class _NotificationViewState extends State<NotificationView> {
                       
                       // Navigate to detail page
                       Navigator.push(
+                        // ignore: use_build_context_synchronously
                         context,
                         CupertinoPageRoute(
                           builder: (context) => NotificationDetailScreen(

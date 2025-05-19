@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
-import 'package:swiss_gold/core/utils/endpoint.dart';
 import '../models/spot_rate_model.dart';
 import 'secrete_key.dart';
 

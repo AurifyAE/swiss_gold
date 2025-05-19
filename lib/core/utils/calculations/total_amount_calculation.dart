@@ -107,8 +107,6 @@ double calculateTotalAmount(
           name: "GOLD_CALC");
     }
 
-    print(
-        "✅ [TOTAL_AMOUNT_CALC] Final total amount: ${totalAmount > 0 ? totalAmount : 0.0} AED");
 
     dev.log(
         "✅ [TOTAL_AMOUNT_CALC] Final total amount: ${totalAmount > 0 ? totalAmount : 0.0} AED",

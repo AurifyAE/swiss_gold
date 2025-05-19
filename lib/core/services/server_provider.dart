@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:http/http.dart' as http;
 import 'package:swiss_gold/core/services/secrete_key.dart';
 // import 'package:swiss_gold/services/spot_rate_service.dart';
@@ -9,10 +9,9 @@ import 'package:swiss_gold/core/services/secrete_key.dart';
 
 import '../models/spot_rate_model.dart';
 import '../utils/endpoint.dart';
-import 'spotrate_service.dart';
 
 class GoldRateProvider extends ChangeNotifier {
-  IO.Socket? _socket;
+  io.Socket? _socket;
   Map<String, dynamic>? _goldData;
   String _serverLink = 'https://capital-server-gnsu.onrender.com';
   bool _isConnected = false;
@@ -20,7 +19,7 @@ class GoldRateProvider extends ChangeNotifier {
   
   // Add properties for spot rate data
   SpotRateModel? _spotRateData;
-  String _adminId = ''; // This should be set from somewhere in your app
+// This should be set from somewhere in your app
 
   // Getters
   Map<String, dynamic>? get goldData => _goldData;
@@ -30,7 +29,6 @@ class GoldRateProvider extends ChangeNotifier {
 
   // Set admin ID
   set adminId(String id) {
-    _adminId = id;
     // fetchSpotRates();
   }
 
@@ -39,7 +37,7 @@ class GoldRateProvider extends ChangeNotifier {
     initializeConnection();
   }
 
-  // Initialize the connection to the Socket.IO server
+  // Initialize the connection to the Socket.io server
   Future<void> initializeConnection() async {
     _isLoading = true;
     notifyListeners();
@@ -71,7 +69,7 @@ class GoldRateProvider extends ChangeNotifier {
     dev.log('Fetching server link');
     try {
       final response = await http.get(
-        Uri.parse('${baseUrl}/get-server'),
+        Uri.parse('$baseUrl/get-server'),
         headers: {
           'X-Secret-Key': secreteKey,
           'Content-Type': 'application/json',
@@ -98,7 +96,7 @@ class GoldRateProvider extends ChangeNotifier {
   Future<void> connectToSocket({required String link}) async {
     dev.log('Connecting to socket at: $link');
     try {
-      _socket = IO.io(link, {
+      _socket = io.io(link, {
         'transports': ['websocket'],
         'autoConnect': true,
         'forceNew': true,

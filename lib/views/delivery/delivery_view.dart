@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
@@ -10,10 +12,7 @@ import 'package:swiss_gold/core/view_models/product_view_model.dart';
 import 'package:swiss_gold/core/services/server_provider.dart';
 
 import '../../core/utils/calculations/bid_price_calculation.dart';
-import '../../core/utils/calculations/get_product.dart';
-import '../../core/utils/calculations/purity_calculation.dart';
 import '../../core/utils/calculations/total_amount_calculation.dart';
-import '../../core/utils/money_format_heper.dart';
 import '../../core/utils/widgets/snakbar.dart';
 import '../../core/view_models/cart_view_model.dart';
 import 'widgets/cash_summary_card.dart';
@@ -206,9 +205,6 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                           Provider.of<GoldRateProvider>(context, listen: false);
 
                       double originalBid = 0.0;
-                      double biddingPrice = 0.0;
-                      double askingPrice = 0.0;
-                      double bidPrice = 0.0;
 
                       if (goldRateProvider.goldData != null) {
                         originalBid = double.tryParse(
@@ -218,17 +214,8 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                             "🟡 Order submission - Original bid: $originalBid");
 
                         if (goldRateProvider.spotRateData != null) {
-                          double bidSpread =
-                              goldRateProvider.spotRateData!.goldBidSpread;
-                          double askSpread =
-                              goldRateProvider.spotRateData!.goldAskSpread;
 
-                          biddingPrice = originalBid + bidSpread;
-                          askingPrice = biddingPrice + askSpread + 0.5;
-                          bidPrice = askingPrice / 31.103 * 3.674;
                         } else {
-                          bidPrice = originalBid / 31.103 * 3.674;
-                          askingPrice = originalBid;
                         }
                       }
 

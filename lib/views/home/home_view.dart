@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -6,7 +8,6 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:swiss_gold/core/utils/colors.dart';
 
-import 'package:swiss_gold/core/utils/endpoint.dart';
 import 'package:swiss_gold/core/utils/enum/view_state.dart';
 import 'package:swiss_gold/core/utils/image_assets.dart';
 import 'package:swiss_gold/core/utils/navigate.dart';
@@ -17,7 +18,6 @@ import 'package:swiss_gold/core/utils/widgets/custom_snackbar.dart';
 import 'package:swiss_gold/core/view_models/cart_view_model.dart';
 import 'package:swiss_gold/core/view_models/order_history_view_model.dart';
 import 'package:swiss_gold/core/view_models/product_view_model.dart';
-import 'package:swiss_gold/core/utils/widgets/category_shimmer.dart';
 import 'package:swiss_gold/views/delivery/delivery_view.dart';
 import 'package:swiss_gold/views/login/login_view.dart';
 import 'package:swiss_gold/views/products/product_view.dart';
@@ -153,7 +153,6 @@ void didChangeDependencies() {
 }
 
   void processOrder(Map<String, dynamic> finalPayload) {
-    print(finalPayload);
 
     if (finalPayload.containsKey("success") &&
         finalPayload["success"] == true) {

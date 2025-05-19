@@ -115,6 +115,7 @@ class ProductDetailsCard extends StatelessWidget {
           padding: EdgeInsets.all(12.w),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8.r),
+            // ignore: deprecated_member_use
             border: Border.all(color: UIColor.gold.withOpacity(0.5)),
           ),
           child: Column(

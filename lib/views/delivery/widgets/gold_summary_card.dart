@@ -20,6 +20,7 @@ class GoldSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: UIColor.gold),
+        // ignore: deprecated_member_use
         color: UIColor.gold.withOpacity(0.1),
       ),
       child: Column(

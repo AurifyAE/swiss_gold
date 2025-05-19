@@ -15,6 +15,7 @@ void customSnackBar(
     width: width??double.infinity,
     padding: const EdgeInsets.all(8),
     duration: Duration(seconds: duration ?? 2),
+    // ignore: deprecated_member_use
     backgroundColor: bgColor ?? Colors.black.withOpacity(0.8),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(15),

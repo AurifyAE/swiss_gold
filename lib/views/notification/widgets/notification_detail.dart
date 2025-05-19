@@ -1,7 +1,8 @@
+// ignore_for_file: deprecated_member_use, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/models/notification_model.dart';
 import '../../../core/services/cart_service.dart';
@@ -11,9 +12,9 @@ class NotificationDetailScreen extends StatelessWidget {
   final String notificationId;
 
   const NotificationDetailScreen({
-    Key? key,
+    super.key,
     required this.notificationId,
-  }) : super(key: key);
+  });
 
   String _formatDateTime(DateTime dateTime) {
     return DateFormat('MMMM d, y • h:mm a').format(dateTime);

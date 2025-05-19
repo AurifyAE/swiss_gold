@@ -19,7 +19,6 @@ class AuthViewModel extends BaseModel {
       _userModel = await AuthService.login(payload);
       // Only log the ID if _userModel is not null
       if (_userModel != null) {
-        print('------------------------------------------------------------------>>>>>>>>>>>${_userModel?.userId}');
       }
     } catch (e) {
       log('Login error: ${e.toString()}');

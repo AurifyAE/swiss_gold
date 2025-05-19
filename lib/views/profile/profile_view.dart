@@ -28,7 +28,6 @@ class _ProfileViewState extends State<ProfileView>
   Animation<double>? animation;
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileViewModel>().getProfile();
@@ -74,9 +73,12 @@ class _ProfileViewState extends State<ProfileView>
               : model.userModel == null
                   ? SizedBox.shrink()
                   : Column(
-                    
                       children: [
-                         isGuest == true?SizedBox(height: 50.h,):SizedBox.shrink(),
+                        isGuest == true
+                            ? SizedBox(
+                                height: 50.h,
+                              )
+                            : SizedBox.shrink(),
                         Container(
                           padding: EdgeInsets.all(10.sp),
                           decoration: BoxDecoration(
@@ -100,37 +102,41 @@ class _ProfileViewState extends State<ProfileView>
                             fontSize: 22.sp,
                           ),
                         ),
-                         isGuest == false?
-                        Text(
-                          model.userModel!.mobile.toUpperCase(),
-                          style: TextStyle(
-                            color: UIColor.gold,
-                            fontSize: 18.sp,
-                            fontFamily: 'Familiar',
-                          ),
-                        ):SizedBox.shrink(),
-                         isGuest == false?
-                        Text(
-                          model.userModel!.location.toUpperCase(),
-                          style: TextStyle(
-                            color: UIColor.gold,
-                            fontSize: 18.sp,
-                            fontFamily: 'Familiar',
-                          ),
-                        ):SizedBox.shrink(),
-                         isGuest == false?
-                        Text(
-                          model.userModel!.category.toUpperCase(),
-                          style: TextStyle(
-                            color: UIColor.gold,
-                            fontSize: 18.sp,
-                            fontFamily: 'Familiar',
-                          ),
-                        ):SizedBox.shrink(),
-                         isGuest == false?
-                        SizedBox(
-                          height: 20,
-                        ):SizedBox.shrink(),
+                        isGuest == false
+                            ? Text(
+                                model.userModel!.mobile.toUpperCase(),
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontSize: 18.sp,
+                                  fontFamily: 'Familiar',
+                                ),
+                              )
+                            : SizedBox.shrink(),
+                        isGuest == false
+                            ? Text(
+                                model.userModel!.location.toUpperCase(),
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontSize: 18.sp,
+                                  fontFamily: 'Familiar',
+                                ),
+                              )
+                            : SizedBox.shrink(),
+                        isGuest == false
+                            ? Text(
+                                model.userModel!.category.toUpperCase(),
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontSize: 18.sp,
+                                  fontFamily: 'Familiar',
+                                ),
+                              )
+                            : SizedBox.shrink(),
+                        isGuest == false
+                            ? SizedBox(
+                                height: 20,
+                              )
+                            : SizedBox.shrink(),
                         isGuest == false
                             ? CustomOutlinedBtn(
                                 borderRadius: 22.sp,
@@ -182,8 +188,12 @@ class _ProfileViewState extends State<ProfileView>
                                         'isGuest'
                                       ]).then(
                                         (_) {
-                                          final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
-    authViewModel.logout();
+                                          // ignore: use_build_context_synchronously
+                                          final authViewModel =
+                                              Provider.of<AuthViewModel>(
+                                                  context,
+                                                  listen: false);
+                                          authViewModel.logout();
 
                                           Navigator.pushAndRemoveUntil(
                                               // ignore: use_build_context_synchronously
@@ -202,8 +212,7 @@ class _ProfileViewState extends State<ProfileView>
                                       child: CustomOutlinedBtn(
                                           borderRadius: 12.sp,
                                           btnText: 'Cancel',
-                                                                              btnTextColor: UIColor.gold,
-
+                                          btnTextColor: UIColor.gold,
                                           borderColor: UIColor.gold,
                                           padH: 12.w,
                                           padV: 12.h,

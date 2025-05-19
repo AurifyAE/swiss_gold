@@ -39,7 +39,6 @@ class _BottomNavState extends State<BottomNav> {
   void checkConnection() async {
     internetStreamSubscription =
         InternetConnection().onStatusChange.listen((InternetStatus status) {
-      print(status);
 
       if (mounted) {
         switch (status) {
@@ -50,7 +49,6 @@ class _BottomNavState extends State<BottomNav> {
                   setState(() {
                     isConnected = true;
                   });
-                  print("Internet connected");
                 } else {
                   _retryConnection();
                 }
@@ -105,7 +103,6 @@ class _BottomNavState extends State<BottomNav> {
             isGuestUser = cartViewModel.isGuest ?? false;
           });
         }
-        print("Bottom Nav - Guest mode: $isGuestUser");
       });
     });
   }

@@ -132,24 +132,18 @@ class _ProductViewState extends State<ProductView>
       context.read<CartViewModel>().incrementQuantity(
           {'pId': productId}).then((result) {
         if (result != null && result.success == true) {
-          print('Cart incremented for product: $productId with quantity: 1');
         } else {
-          print('Failed to increment cart: ${result?.message ?? "Unknown error"}');
         }
       }).catchError((error) {
-        print('Error incrementing cart: $error');
       });
     } else {
       // User in guest mode, use admin ID "gyu123" for the cart operations
       context.read<CartViewModel>().incrementQuantity(
           {'pId': productId, 'userId': 'gyu123'}).then((result) {
         if (result != null && result.success == true) {
-          print('Cart incremented for guest user with admin ID "gyu123" for product: $productId with quantity: 1');
         } else {
-          print('Failed to increment cart for guest user: ${result?.message ?? "Unknown error"}');
         }
       }).catchError((error) {
-        print('Error incrementing cart for guest user: $error');
       });
     }
   }
@@ -191,7 +185,6 @@ class _ProductViewState extends State<ProductView>
   }
 
   void processOrder(Map<String, dynamic> finalPayload) {
-    print(finalPayload);
     
     if (finalPayload.containsKey("success") && finalPayload["success"] == true) {
       setState(() {

@@ -12,7 +12,7 @@ import '../../core/utils/colors.dart';
 // import '../models/bank_model.dart';
  
 class BankDetailsView extends StatelessWidget {
-  const BankDetailsView({Key? key}) : super(key: key);
+  const BankDetailsView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class BankDetailsView extends StatelessWidget {
 
 // Wrapper scaffold to handle SnackBar globally
 class BankDetailsScaffold extends StatefulWidget {
-  const BankDetailsScaffold({Key? key}) : super(key: key);
+  const BankDetailsScaffold({super.key});
 
   @override
   State<BankDetailsScaffold> createState() => _BankDetailsScaffoldState();
@@ -76,7 +76,7 @@ class _BankDetailsScaffoldState extends State<BankDetailsScaffold> {
 class BankDetailsContent extends StatelessWidget {
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
   
-  const BankDetailsContent({Key? key, required this.scaffoldMessengerKey}) : super(key: key);
+  const BankDetailsContent({super.key, required this.scaffoldMessengerKey});
 
   @override
   Widget build(BuildContext context) {
@@ -182,10 +182,10 @@ class EmptyBankDetailsWidget extends StatelessWidget {
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
   
   const EmptyBankDetailsWidget({
-    Key? key, 
+    super.key, 
     required this.provider,
     required this.scaffoldMessengerKey,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +262,7 @@ class EmptyBankDetailsWidget extends StatelessWidget {
 class BankCard extends StatelessWidget {
   final BankDetails bankDetails;
   
-  const BankCard({Key? key, required this.bankDetails}) : super(key: key);
+  const BankCard({super.key, required this.bankDetails});
 
   @override
   Widget build(BuildContext context) {
