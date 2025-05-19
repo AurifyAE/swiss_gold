@@ -13,7 +13,7 @@ class NotificationService {
     return await LocalStorage.getString('userId');
   }
 
-  Future<List<NotificationModel>> getNotifications() async {
+  Future<Map<String, dynamic>> getNotifications() async {
     try {
       final userId = await _getUserId();
       
@@ -34,9 +34,14 @@ class NotificationService {
         
         if (responseData['success'] == true) {
           final List<dynamic> notificationsJson = responseData['data']['notifications'];
-          return notificationsJson
-              .map((json) => NotificationModel.fromJson(json))
-              .toList();
+          final int unreadCount = responseData['data']['unreadCount'] ?? 0;
+          
+          return {
+            'notifications': notificationsJson
+                .map((json) => NotificationModel.fromJson(json))
+                .toList(),
+            'unreadCount': unreadCount
+          };
         } else {
           throw Exception(responseData['message'] ?? 'Failed to fetch notifications');
         }
@@ -56,7 +61,6 @@ class NotificationService {
         throw Exception('User ID not found. Please login again.');
       }
 
-      // Updated endpoint based on provided information
       final response = await client.patch(
         Uri.parse('$baseUrl/notifications/read/$userId/$notificationId'),
         headers: {
