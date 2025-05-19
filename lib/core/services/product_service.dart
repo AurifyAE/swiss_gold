@@ -328,7 +328,9 @@ static Future<List<dynamic>> fetchProducts([String? adminId, String? categoryId]
     }
   }
 
-  static Future<MessageModel?> bookProducts(
+  // In ProductService.bookProducts method - replace the existing logging section:
+
+static Future<MessageModel?> bookProducts(
     Map<String, dynamic> payload) async {
   try {
     final id = await LocalStorage.getString('userId');
@@ -341,9 +343,13 @@ static Future<List<dynamic>> fetchProducts([String? adminId, String? categoryId]
     // Format the booking data to match the expected structure
     final List<Map<String, dynamic>> bookingData = 
         (payload["bookingData"] as List).map((item) {
+      
+      // Log each item being processed
+      log('Processing booking item: ${jsonEncode(item)}');
+      
       return {
         "productId": item["productId"],
-        "makingCharge": item["fixedPrice"] ?? item["makingCharge"] ?? 0.0
+        "makingCharge": item["makingCharge"] ?? 0.0
       };
     }).toList(); 
 
@@ -358,8 +364,14 @@ static Future<List<dynamic>> fetchProducts([String? adminId, String? categoryId]
     };
 
     final url = bookingUrl.replaceFirst('{userId}', id.toString());
-    log('Booking products with URL: $url');
-    log('Formatted booking payload: ${formattedPayload.toString()}');
+    
+    // Enhanced logging
+    log('=== BOOKING REQUEST DETAILS ===');
+    log('URL: $url');
+    log('Request Headers: {X-Secret-Key: [HIDDEN], Content-Type: application/json}');
+    log('Request Body: ${jsonEncode(formattedPayload)}');
+    log('Formatted booking data count: ${bookingData.length}');
+    log('================================');
 
     var response = await client.post(Uri.parse(url),
         headers: {
@@ -368,18 +380,22 @@ static Future<List<dynamic>> fetchProducts([String? adminId, String? categoryId]
         },
         body: jsonEncode(formattedPayload));
 
-    log('Booking response status: ${response.statusCode}');
+    log('=== BOOKING RESPONSE DETAILS ===');
+    log('Response Status: ${response.statusCode}');
+    log('Response Body: ${response.body}');
+    log('=================================');
 
     if (response.statusCode == 200) {
       Map<String, dynamic> responseData = jsonDecode(response.body);
+      log('✅ Booking successful');
       return MessageModel.fromJson(responseData);
     } else {
-      log('Booking error response: ${response.body}');
+      log('❌ Booking failed with status: ${response.statusCode}');
       Map<String, dynamic> responseData = jsonDecode(response.body);
       return MessageModel.fromJson(responseData);
     }
   } catch (e) {
-    log('Error booking products: ${e.toString()}');
+    log('💥 Error booking products: ${e.toString()}');
     return null;
   }
 }
