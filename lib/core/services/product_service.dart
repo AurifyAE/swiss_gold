@@ -365,18 +365,19 @@ static Future<MessageModel?> fixPrice(Map<String, dynamic> payload) async {
 static Future<MessageModel?> bookProducts(
     Map<String, dynamic> payload) async {
   try {
-    final id = await LocalStorage.getString('userId');
-    if (id == null || id.isEmpty) {
+    final userId = await LocalStorage.getString('userId');
+    final adminId = await LocalStorage.getString('adminId') ?? '67f37dfe4831e0eb637d09f1'; // Default adminId
+    
+    if (userId == null || userId.isEmpty) {
       log('Error: userId is empty');
       return MessageModel.fromJson(
           {'success': false, 'message': 'User ID is missing'});
     }
 
-    // Format the booking data to match the expected structure
+    // Format the booking data to match the expected structure (only productId and makingCharge)
     final List<Map<String, dynamic>> bookingData = 
         (payload["bookingData"] as List).map((item) {
       
-      // Log each item being processed
       log('Processing booking item: ${jsonEncode(item)}');
       
       return {
@@ -385,21 +386,19 @@ static Future<MessageModel?> bookProducts(
       };
     }).toList(); 
 
-    // Prepare the updated payload
+    // Prepare the payload with only required fields
     final Map<String, dynamic> formattedPayload = {
       "paymentMethod": payload["paymentMethod"],
       "bookingData": bookingData,
-      // Optional fields that might be needed
-      "deliveryDate": payload["deliveryDate"],
-      "address": payload["address"],
-      "contact": payload["contact"]
     };
 
-    final url = bookingUrl.replaceFirst('{userId}', id.toString());
+    // Use the correct API endpoint with both adminId and userId
+    final url = 'https://api.nova.aurify.ae/user/booking/$adminId/$userId';
     
-    // Enhanced logging
     log('=== BOOKING REQUEST DETAILS ===');
     log('URL: $url');
+    log('AdminId: $adminId');
+    log('UserId: $userId');
     log('Request Headers: {X-Secret-Key: [HIDDEN], Content-Type: application/json}');
     log('Request Body: ${jsonEncode(formattedPayload)}');
     log('Formatted booking data count: ${bookingData.length}');
@@ -423,12 +422,22 @@ static Future<MessageModel?> bookProducts(
       return MessageModel.fromJson(responseData);
     } else {
       log('❌ Booking failed with status: ${response.statusCode}');
-      Map<String, dynamic> responseData = jsonDecode(response.body);
-      return MessageModel.fromJson(responseData);
+      try {
+        Map<String, dynamic> responseData = jsonDecode(response.body);
+        return MessageModel.fromJson(responseData);
+      } catch (e) {
+        return MessageModel.fromJson({
+          'success': false, 
+          'message': 'Failed to book products: HTTP ${response.statusCode}'
+        });
+      }
     }
   } catch (e) {
     log('💥 Error booking products: ${e.toString()}');
-    return null;
+    return MessageModel.fromJson({
+      'success': false, 
+      'message': 'Failed to book products: ${e.toString()}'
+    });
   }
 }
 

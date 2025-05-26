@@ -41,7 +41,7 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
     double totalWeight = 0.0;
     List bookingData = widget.orderData["bookingData"] as List;
 
-    dev.log("Starting total weight calculation with 3 digit precision...");
+    // dev.log("Starting total weight calculation with 3 digit precision...");
 
     for (var item in bookingData) {
       String productId = item["productId"];
@@ -54,30 +54,30 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
       double productWeight = double.parse(product.weight.toStringAsFixed(3));
       totalWeight += productWeight * quantity;
 
-      dev.log(
-          "Product $productId: weight=${productWeight}g × quantity=$quantity = ${(productWeight * quantity).toStringAsFixed(3)}g");
+      // dev.log(
+      //     "Product $productId: weight=${productWeight}g × quantity=$quantity = ${(productWeight * quantity).toStringAsFixed(3)}g");
     }
 
-    dev.log(
-        "Final total weight calculation: ${totalWeight.toStringAsFixed(3)}g");
+    // dev.log(
+    //     "Final total weight calculation: ${totalWeight.toStringAsFixed(3)}g");
     return totalWeight;
   }
 
   @override
   void initState() {
     super.initState();
-    dev.log("Initializing DeliveryDetailsView");
+    // dev.log("Initializing DeliveryDetailsView");
 
     Future.microtask(() {
       final goldRateProvider =
           Provider.of<GoldRateProvider>(context, listen: false);
       if (!goldRateProvider.isConnected || goldRateProvider.goldData == null) {
-        dev.log(
-            "Initializing gold rate connection - Current status: isConnected=${goldRateProvider.isConnected}, hasData=${goldRateProvider.goldData != null}");
+        // dev.log(
+        //     "Initializing gold rate connection - Current status: isConnected=${goldRateProvider.isConnected}, hasData=${goldRateProvider.goldData != null}");
         goldRateProvider.initializeConnection();
       } else {
-        dev.log(
-            "Gold rate already connected - Current bid: ${goldRateProvider.goldData!['bid']}");
+        // dev.log(
+        //     "Gold rate already connected - Current bid: ${goldRateProvider.goldData!['bid']}");
       }
     });
   }
@@ -98,10 +98,10 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
     double bidPrice =
         calculateBidPriceForDisplay(goldRateProvider, productViewModel);
 
-    dev.log("📊 Summary - Payment method: ${isGoldPayment ? 'Gold' : 'Cash'}");
-    dev.log("📊 Summary - Total weight: $totalWeight g");
-    dev.log("📊 Summary - Total amount: $totalAmount AED");
-    dev.log("📊 Summary - Current bid price: $bidPrice AED/g");
+    // dev.log("📊 Summary - Payment method: ${isGoldPayment ? 'Gold' : 'Cash'}");
+    // dev.log("📊 Summary - Total weight: $totalWeight g");
+    // dev.log("📊 Summary - Total amount: $totalAmount AED");
+    // dev.log("📊 Summary - Current bid price: $bidPrice AED/g");
 
     return Scaffold(
       appBar: AppBar(
@@ -190,6 +190,7 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
 // Updated onTapped method in DeliveryDetailsView (replace the existing onTapped method)
 
 onTapped: () async {
+  // Show loading dialog
   showDialog(
     context: context,
     barrierDismissible: false,
@@ -200,33 +201,38 @@ onTapped: () async {
         ),
       );
     },
-
-// Add this import at the top of DeliveryDetailsView file
-// import 'package:swiss_gold/core/services/local_storage.dart';
-
-// Updated ProductService.fixPrice method (replace the existing fixPrice method)
-
   );
 
   try {
     final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
     final goldRateProvider = Provider.of<GoldRateProvider>(context, listen: false);
 
+    dev.log('🚀 === STARTING ORDER PROCESS ===');
+    dev.log('Payment Method: ${widget.orderData["paymentMethod"]}');
+    dev.log('Original Booking Data: ${jsonEncode(widget.orderData["bookingData"])}');
+    dev.log('Gold Rate Connected: ${goldRateProvider.isConnected}');
+    dev.log('Current Gold Data: ${goldRateProvider.goldData}');
+    dev.log('=====================================');
+
     // STEP 1: Prepare fix price payload with current live rates
     List<Map<String, dynamic>> fixPriceBookingData = [];
     List bookingData = widget.orderData["bookingData"] as List;
     
-    dev.log('=== STEP 1: PREPARING FIX PRICE DATA ===');
-    dev.log('Items to fix price: ${bookingData.length}');
+    dev.log('🔧 === STEP 1: PREPARING FIX PRICE DATA ===');
+    dev.log('Items to process for fix price: ${bookingData.length}');
 
     for (var item in bookingData) {
       String productId = item["productId"];
       int quantity = item["quantity"] ?? 1;
 
+      dev.log('Processing item: ProductId=$productId, Quantity=$quantity');
+
       Product? product = productViewModel.productList.firstWhere(
         (p) => p.pId == productId,
         orElse: () => throw Exception("Product not found: $productId"),
       );
+
+      dev.log('Found Product: ${product.title}, Weight: ${product.weight}g, MakingCharge: ${product.makingCharge}');
 
       // Calculate current live price using unified calculation
       Map<String, double> currentPricing = calculateProductPricing(
@@ -237,6 +243,7 @@ onTapped: () async {
       );
 
       double currentUnitPrice = currentPricing['unitPrice']!;
+      dev.log('Calculated Unit Price: $currentUnitPrice AED');
 
       // Add each unit separately for fix price
       for (int i = 0; i < quantity; i++) {
@@ -254,16 +261,24 @@ onTapped: () async {
       "bookingData": fixPriceBookingData,
     };
 
-    dev.log('=== FIX PRICE PAYLOAD ===');
+    dev.log('🔒 === FIX PRICE PAYLOAD SUMMARY ===');
     dev.log('Total items to fix: ${fixPriceBookingData.length}');
     dev.log('Complete payload: ${jsonEncode(fixPricePayload)}');
-    dev.log('========================');
+    dev.log('===================================');
 
     // STEP 2: Call fix price API
-    dev.log('🔒 STEP 2: Calling fix price API...');
+    dev.log('🔒 === STEP 2: CALLING FIX PRICE API ===');
     final fixPriceResult = await productViewModel.fixPrice(fixPricePayload);
 
-    if (fixPriceResult == null || fixPriceResult.success != true) {
+    dev.log('Fix Price API Response: ${fixPriceResult.toString()}');
+
+    // Updated fix price success check - check for message instead of success field
+    if (fixPriceResult == null || 
+        fixPriceResult.message == null || 
+        !fixPriceResult.message!.toLowerCase().contains('fixed successfully')) {
+      dev.log('❌ FIX PRICE FAILED');
+      dev.log('Error Message: ${fixPriceResult?.message}');
+      
       Navigator.of(context).pop(); // Close loading dialog
       
       showOrderStatusSnackBar(
@@ -274,80 +289,101 @@ onTapped: () async {
       return;
     }
 
-    dev.log('✅ Price fixed successfully');
+    dev.log('✅ PRICE FIXED SUCCESSFULLY');
+    dev.log('Fix Price Result: ${fixPriceResult.message}');
 
     // STEP 3: Prepare booking payload with fixed prices
-    dev.log('📦 STEP 3: Preparing booking with fixed prices...');
+    dev.log('📦 === STEP 3: PREPARING BOOKING PAYLOAD ===');
     List<Map<String, dynamic>> bookingDataWithMakingCharges = [];
 
-    for (var fixedItem in fixPriceBookingData) {
-      String productId = fixedItem["productId"];
+    // Group by productId and get makingCharge from original booking data
+    for (var item in bookingData) {
+      String productId = item["productId"];
+      int quantity = item["quantity"] ?? 1;
       
       Product? product = productViewModel.productList.firstWhere(
         (p) => p.pId == productId,
         orElse: () => throw Exception("Product not found: $productId"),
       );
 
-      final bookingItem = {
-        "productId": productId,
-        "makingCharge": product.makingCharge.toDouble(),
-      };
-      bookingDataWithMakingCharges.add(bookingItem);
-      
-      dev.log('Added booking item: ProductId=$productId, MakingCharge=${product.makingCharge}');
+      dev.log('Processing booking for: ProductId=$productId, Quantity=$quantity, MakingCharge=${product.makingCharge}');
+
+      // Add each unit separately (as per fix price structure)
+      for (int i = 0; i < quantity; i++) {
+        final bookingItem = {
+          "productId": productId,
+          "makingCharge": product.makingCharge.toDouble(),
+        };
+        bookingDataWithMakingCharges.add(bookingItem);
+        dev.log('Added booking item ${i + 1}/$quantity: ProductId=$productId, MakingCharge=${product.makingCharge}');
+      }
     }
 
+    // Simplified booking payload (only required fields)
     final bookingPayload = {
       "paymentMethod": widget.orderData["paymentMethod"],
       "bookingData": bookingDataWithMakingCharges,
-      "deliveryDate": widget.orderData["deliveryDate"],
-      "address": widget.orderData["address"],
-      "contact": widget.orderData["contact"],
-      "priceFixed": true, // Flag to indicate prices are fixed
     };
 
-    dev.log('=== FINAL BOOKING PAYLOAD ===');
+    dev.log('📦 === FINAL BOOKING PAYLOAD ===');
     dev.log('PaymentMethod: ${bookingPayload["paymentMethod"]}');
     dev.log('BookingData items: ${bookingDataWithMakingCharges.length}');
-    dev.log('PriceFixed: ${bookingPayload["priceFixed"]}');
-    dev.log('Complete payload: ${jsonEncode(bookingPayload)}');
-    dev.log('==============================');
+    dev.log('Complete booking payload: ${jsonEncode(bookingPayload)}');
+    dev.log('================================');
 
     // STEP 4: Book products with fixed prices
-    dev.log('🛒 STEP 4: Booking products with fixed prices...');
+    dev.log('🛒 === STEP 4: CALLING BOOKING API ===');
     final bookingResult = await productViewModel.bookProducts(bookingPayload);
 
-    Navigator.of(context).pop(); // Close loading dialog
+    dev.log('Booking API Response: ${bookingResult.toString()}');
 
-    if (bookingResult != null && bookingResult.success == true) {
-      dev.log('✅ BOOKING SUCCESSFUL');
+    // Close loading dialog
+    Navigator.of(context).pop();
+
+    // Updated booking success check to handle both success field and message
+    if (bookingResult != null && 
+        (bookingResult.success == true || 
+         (bookingResult.message != null && 
+          bookingResult.message!.toLowerCase().contains('success')))) {
+      
+      dev.log('🎉 === BOOKING SUCCESSFUL ===');
+      dev.log('Booking Message: ${bookingResult.message}');
+      dev.log('Booking Success: ${bookingResult.success}');
       
       // Clear cart and quantities
+      dev.log('🧹 Clearing cart and quantities...');
       productViewModel.clearQuantities();
       final cartViewModel = Provider.of<CartViewModel>(context, listen: false);
       await cartViewModel.clearCart();
+      dev.log('✅ Cart cleared successfully');
 
       // Show success message
       showOrderStatusSnackBar(
         context: context,
         isSuccess: true,
-        message: 'Order placed successfully with fixed prices!',
+        message: 'Order placed successfully',
       );
 
       // Call onConfirm callback
+      dev.log('📞 Calling onConfirm callback...');
       widget.onConfirm({
         "success": true, 
-        "bookingData": bookingResult,
+        "bookingResult": bookingResult,
         "fixedPrices": fixPriceBookingData,
+        "message": bookingResult.message,
       });
 
       // Navigate back to home with success result
+      dev.log('🏠 Navigating back to home screen...');
       Navigator.of(context).popUntil((route) => route.isFirst);
       
-      dev.log('🏠 Navigated back to home screen successfully');
+      dev.log('✅ === ORDER PROCESS COMPLETED SUCCESSFULLY ===');
       
     } else {
-      dev.log('❌ BOOKING FAILED: ${bookingResult?.message}');
+      dev.log('❌ === BOOKING FAILED ===');
+      dev.log('Booking Error Message: ${bookingResult?.message}');
+      dev.log('Booking Success Status: ${bookingResult?.success}');
+      dev.log('Full Booking Response: ${bookingResult.toString()}');
       
       showOrderStatusSnackBar(
         context: context,
@@ -356,9 +392,14 @@ onTapped: () async {
       );
     }
 
-  } catch (e) {
-    dev.log('💥 ERROR during fix price + booking process: ${e.toString()}');
-    Navigator.of(context).pop(); // Close loading dialog
+  } catch (e, stackTrace) {
+    dev.log('💥 === CRITICAL ERROR IN ORDER PROCESS ===');
+    dev.log('Error: ${e.toString()}');
+    dev.log('Stack Trace: ${stackTrace.toString()}');
+    dev.log('==========================================');
+    
+    // Close loading dialog if still open
+    Navigator.of(context).pop();
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
