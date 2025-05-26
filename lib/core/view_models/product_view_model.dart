@@ -282,6 +282,21 @@ void setQuantities(Map<int, int> quantities) {
   setState(ViewState.idle);
   notifyListeners();
 }
+// void clearQuantities() {
+//   productQuantities.clear();
+//   notifyListeners();
+// }
+
+// void getTotalQuantity(Map<int, int> quantities) {
+//   int total = 0;
+//   quantities.forEach((key, value) {
+//     total += value;
+//   });
+//   totalQuantity = total;
+//   notifyListeners();
+// }
+
+
   
   // Method to refresh user status and products
   Future<void> refreshUserStatus() async {

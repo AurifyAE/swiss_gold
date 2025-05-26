@@ -22,6 +22,9 @@ import 'package:swiss_gold/views/delivery/delivery_view.dart';
 import 'package:swiss_gold/views/login/login_view.dart';
 import 'package:swiss_gold/views/products/product_view.dart';
 
+import '../../core/services/server_provider.dart';
+import '../../core/utils/calculations/total_amount_calculation.dart';
+
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -40,6 +43,103 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   DateTime selectedDate = DateTime.now();
   final FocusNode _pageFocusNode = FocusNode();
   bool _initialFetchDone = false;
+
+// void navigateToDeliveryDetails(
+//     {String? paymentMethod, String? pricingOption, String? amount}) {
+//   // Store current state before navigation
+//   final Map<int, int> previousQuantities = Map<int, int>.from(productQuantities);
+//   final List<Map<String, dynamic>> previousBookingData = List<Map<String, dynamic>>.from(bookingData);
+  
+//   final effectivePaymentMethod =
+//       selectedValue != 'Gold' ? (paymentMethod ?? 'Cash') : 'Gold';
+
+//   Map<String, dynamic> finalPayload = {
+//     "bookingData": bookingData,
+//     "paymentMethod": effectivePaymentMethod,
+//     if (selectedValue != 'Gold' && pricingOption != null)
+//       "pricingOption": pricingOption,
+//     "deliveryDate": selectedDate.toString().split(' ')[0]
+//   };
+
+//   if (selectedValue == 'Gold' &&
+//       pricingOption == 'Premium' &&
+//       amount != null) {
+//     finalPayload['premium'] = amount;
+//   }
+//   if (selectedValue != 'Gold' &&
+//       pricingOption == 'Discount' &&
+//       amount != null) {
+//     finalPayload['discount'] = amount;
+//   }
+
+//   // Ensure the ViewModel has the current state before navigation
+//   final productViewModel = context.read<ProductViewModel>();
+//   productViewModel.setQuantities(Map<int, int>.from(productQuantities));
+
+//   // Use Navigator.push with awaiting the result
+//   Navigator.push<Map<String, dynamic>>(
+//     context,
+//     PageRouteBuilder(
+//       pageBuilder: (context, animation, secondaryAnimation) => 
+//         DeliveryDetailsView(
+//           orderData: finalPayload,
+//           onConfirm: (deliveryDetails) {
+//             processOrder(finalPayload);
+//           },
+//         ),
+//       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+//         const begin = Offset(1.0, 0.0);
+//         const end = Offset.zero;
+//         const curve = Curves.easeInOut;
+//         var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+//         var offsetAnimation = animation.drive(tween);
+//         return SlideTransition(position: offsetAnimation, child: child);
+//       },
+//     ),
+//   ).then((result) {
+//     // Handle the result from DeliveryDetailsView
+//     if (result != null) {
+//       log('Returned from delivery page with result: $result');
+      
+//       // If order was successful, reset state
+//       if (result['orderSuccess'] == true) {
+//         setState(() {
+//           selectedValue = '';
+//           bookingData.clear();
+//           productQuantities.clear();
+//         });
+        
+//         // Clear ViewModel state too
+//         productViewModel.clearQuantities();
+        
+//         log('Order was successful, quantities reset');
+//       } 
+//       // If explicitly cancelled or failed, restore the previous state
+//       else {
+//         log('Order was cancelled or failed, restoring previous quantities');
+//         setState(() {
+//           productQuantities = Map<int, int>.from(previousQuantities);
+//           bookingData = List<Map<String, dynamic>>.from(previousBookingData);
+//         });
+        
+//         // Restore ViewModel state too
+//         productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
+//         productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
+//       }
+//     } else {
+//       // If result is null (back button press), restore previous state
+//       log('Navigation returned null (likely back button), restoring previous state');
+//       setState(() {
+//         productQuantities = Map<int, int>.from(previousQuantities);
+//         bookingData = List<Map<String, dynamic>>.from(previousBookingData);
+//       });
+      
+//       // Restore ViewModel state too
+//       productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
+//       productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
+//     }
+//   });
+// }
 
 void navigateToDeliveryDetails(
     {String? paymentMethod, String? pricingOption, String? amount}) {
@@ -81,7 +181,8 @@ void navigateToDeliveryDetails(
         DeliveryDetailsView(
           orderData: finalPayload,
           onConfirm: (deliveryDetails) {
-            processOrder(finalPayload);
+            // This callback is called from DeliveryDetailsView
+            log('Order confirmed with details: $deliveryDetails');
           },
         ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -94,48 +195,59 @@ void navigateToDeliveryDetails(
       },
     ),
   ).then((result) {
-    // Handle the result from DeliveryDetailsView
-    if (result != null) {
-      log('Returned from delivery page with result: $result');
-      
-      // If order was successful, reset state
-      if (result['orderSuccess'] == true) {
-        setState(() {
-          selectedValue = '';
-          bookingData.clear();
-          productQuantities.clear();
-        });
-        
-        // Clear ViewModel state too
-        productViewModel.clearQuantities();
-        
-        log('Order was successful, quantities reset');
-      } 
-      // If explicitly cancelled or failed, restore the previous state
-      else {
-        log('Order was cancelled or failed, restoring previous quantities');
-        setState(() {
-          productQuantities = Map<int, int>.from(previousQuantities);
-          bookingData = List<Map<String, dynamic>>.from(previousBookingData);
-        });
-        
-        // Restore ViewModel state too
-        productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
-        productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
-      }
-    } else {
-      // If result is null (back button press), restore previous state
-      log('Navigation returned null (likely back button), restoring previous state');
-      setState(() {
-        productQuantities = Map<int, int>.from(previousQuantities);
-        bookingData = List<Map<String, dynamic>>.from(previousBookingData);
-      });
-      
-      // Restore ViewModel state too
-      productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
-      productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
-    }
-  });
+  log('Navigation returned from DeliveryDetailsView with result: $result');
+  
+  // Handle successful order completion
+  if (result != null && result['orderSuccess'] == true) {
+    log('Order was successful, clearing all quantities and state');
+    
+    // Clear local state
+    setState(() {
+      selectedValue = '';
+      bookingData.clear();
+      productQuantities.clear();
+    });
+    
+    // Clear ViewModel state and refresh total quantity
+    final productViewModel = context.read<ProductViewModel>();
+    productViewModel.clearQuantities();
+    productViewModel.getTotalQuantity({}); // Reset total to 0
+    
+    // Show success message
+    customSnackBar(
+      bgColor: UIColor.gold,
+      titleColor: UIColor.white,
+      width: 250.w,
+      context: context,
+      title: result['message'] ?? 'Order placed successfully'
+    );
+    
+    log('✅ All quantities and state cleared after successful order');
+  } 
+  // Handle explicit cancellation
+  else if (result != null && result['cancelled'] == true) {
+    log('Order was explicitly cancelled, restoring previous state');
+    setState(() {
+      productQuantities = Map<int, int>.from(previousQuantities);
+      bookingData = List<Map<String, dynamic>>.from(previousBookingData);
+    });
+    
+    productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
+    productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
+  }
+  // Handle back button or other navigation without explicit result
+  else if (result == null) {
+    log('Navigation returned null, restoring previous state');
+    setState(() {
+      productQuantities = Map<int, int>.from(previousQuantities);
+      bookingData = List<Map<String, dynamic>>.from(previousBookingData);
+    });
+    
+    productViewModel.setQuantities(Map<int, int>.from(previousQuantities));
+    productViewModel.getTotalQuantity(Map<int, int>.from(previousQuantities));
+  }
+});
+
 }
 
 // Add this method to ProductViewModel class
@@ -390,8 +502,11 @@ void _syncQuantitiesFromViewModel() {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
+  final goldRateProvider = Provider.of<GoldRateProvider>(context);
     return Focus(
         focusNode: _pageFocusNode,
         child: Scaffold(
@@ -617,6 +732,13 @@ void _syncQuantitiesFromViewModel() {
                               itemBuilder: (context, index) {
                                 final product = model.productList[index];
 
+                                Map<String, double> pricing = calculateProductPricing(
+          product: product,
+          quantity: 1,
+          goldRateProvider: goldRateProvider,
+          calculationContext: "PRODUCT_DETAILS Item #$index ",
+        );
+
                                 final String productId = product.pId;
                                 final String imageUrl =
                                     product.prodImgs.isNotEmpty
@@ -625,11 +747,12 @@ void _syncQuantitiesFromViewModel() {
                                 final String title = product.title;
                                 final int quantity =
                                     productQuantities[index] ?? 0;
-                                final String price = product.type
-                                            ?.toLowerCase() ==
-                                        'gold'
-                                    ? 'AED ${(model.goldSpotRate ?? 0).toStringAsFixed(2)}'
-                                    : 'AED ${(product.price).toStringAsFixed(2)}';
+                                final price = pricing['basePrice']!;
+                                // final String price = product.type
+                                //             ?.toLowerCase() ==
+                                //         'gold'
+                                //     ? 'AED ${(model.goldSpotRate ?? 0).toStringAsFixed(2)}'
+                                //     : 'AED ${(product.price).toStringAsFixed(2)}';
                                 final String productType =
                                     product.type ?? 'Unknown';
 

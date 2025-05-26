@@ -1,11 +1,15 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:swiss_gold/core/utils/colors.dart';
 
+import '../money_format_heper.dart';
+
 class CustomCard extends StatelessWidget {
   final String prodImg;
   final String title;
-  final String price;
+  final double price;
   final String? subTitle;
   final int quantity;
   final void Function()? onTap;
@@ -70,7 +74,7 @@ class CustomCard extends StatelessWidget {
                     // ),
                     // SizedBox(height: 5.h),
                     Text(
-                      price,
+                     'AED ${formatNumber(price)}',
                       style: TextStyle(
                         color: UIColor.gold,
                         fontFamily: 'Familiar',

@@ -342,44 +342,47 @@ onTapped: () async {
 
     // Updated booking success check to handle both success field and message
     if (bookingResult != null && 
-        (bookingResult.success == true || 
-         (bookingResult.message != null && 
-          bookingResult.message!.toLowerCase().contains('success')))) {
-      
-      dev.log('🎉 === BOOKING SUCCESSFUL ===');
-      dev.log('Booking Message: ${bookingResult.message}');
-      dev.log('Booking Success: ${bookingResult.success}');
-      
-      // Clear cart and quantities
-      dev.log('🧹 Clearing cart and quantities...');
-      productViewModel.clearQuantities();
-      final cartViewModel = Provider.of<CartViewModel>(context, listen: false);
-      await cartViewModel.clearCart();
-      dev.log('✅ Cart cleared successfully');
+    (bookingResult.success == true || 
+     (bookingResult.message != null && 
+      bookingResult.message!.toLowerCase().contains('success')))) {
+  
+  dev.log('🎉 === BOOKING SUCCESSFUL ===');
+  dev.log('Booking Message: ${bookingResult.message}');
+  dev.log('Booking Success: ${bookingResult.success}');
+  
+  // Show success message first
+  showOrderStatusSnackBar(
+    context: context,
+    isSuccess: true,
+    message: 'Order placed successfully',
+  );
 
-      // Show success message
-      showOrderStatusSnackBar(
-        context: context,
-        isSuccess: true,
-        message: 'Order placed successfully',
-      );
+  // Clear cart and quantities ONLY after successful booking
+  dev.log('🧹 Clearing cart and quantities after successful booking...');
+  productViewModel.clearQuantities();
+  final cartViewModel = Provider.of<CartViewModel>(context, listen: false);
+  await cartViewModel.clearCart();
+  dev.log('✅ Cart cleared successfully');
 
-      // Call onConfirm callback
-      dev.log('📞 Calling onConfirm callback...');
-      widget.onConfirm({
-        "success": true, 
-        "bookingResult": bookingResult,
-        "fixedPrices": fixPriceBookingData,
-        "message": bookingResult.message,
-      });
+  // Call onConfirm callback with success flag
+  dev.log('📞 Calling onConfirm callback...');
+  widget.onConfirm({
+    "success": true, 
+    "bookingResult": bookingResult,
+    "fixedPrices": fixPriceBookingData,
+    "message": bookingResult.message,
+  });
 
-      // Navigate back to home with success result
-      dev.log('🏠 Navigating back to home screen...');
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      
-      dev.log('✅ === ORDER PROCESS COMPLETED SUCCESSFULLY ===');
-      
-    } else {
+  // Navigate back with success result - THIS IS THE KEY CHANGE
+  dev.log('🏠 Navigating back to home screen with success result...');
+  Navigator.of(context).pop({
+    "orderSuccess": true,
+    "message": "Order placed successfully"
+  });
+  
+  dev.log('✅ === ORDER PROCESS COMPLETED SUCCESSFULLY ===');
+  
+} else {
       dev.log('❌ === BOOKING FAILED ===');
       dev.log('Booking Error Message: ${bookingResult?.message}');
       dev.log('Booking Success Status: ${bookingResult?.success}');
