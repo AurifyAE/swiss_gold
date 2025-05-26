@@ -11,6 +11,7 @@ import 'package:swiss_gold/core/utils/widgets/custom_outlined_btn.dart';
 import 'package:swiss_gold/core/view_models/product_view_model.dart';
 import 'package:swiss_gold/core/services/server_provider.dart';
 
+import '../../core/services/local_storage.dart';
 import '../../core/utils/calculations/bid_price_calculation.dart';
 import '../../core/utils/calculations/total_amount_calculation.dart';
 import '../../core/utils/widgets/snakbar.dart';
@@ -184,151 +185,193 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
                   padH: 12.w,
                   padV: 12.h,
                   width: 200.w,
-                  onTapped: () async {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (BuildContext context) {
-                        return Center(
-                          child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(UIColor.gold),
-                          ),
-                        );
-                      },
-                    );
+                 // Updated onTapped method in DeliveryDetailsView (replace the existing onTapped method)
 
-                    try {
-                      final productViewModel =
-                          Provider.of<ProductViewModel>(context, listen: false);
-                      final goldRateProvider =
-                          Provider.of<GoldRateProvider>(context, listen: false);
+// Updated onTapped method in DeliveryDetailsView (replace the existing onTapped method)
 
-                      double originalBid = 0.0;
+onTapped: () async {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(UIColor.gold),
+        ),
+      );
+    },
 
-                      if (goldRateProvider.goldData != null) {
-                        originalBid = double.tryParse(
-                                '${goldRateProvider.goldData!['bid']}') ??
-                            0.0;
-                        dev.log(
-                            "🟡 Order submission - Original bid: $originalBid");
+// Add this import at the top of DeliveryDetailsView file
+// import 'package:swiss_gold/core/services/local_storage.dart';
 
-                        if (goldRateProvider.spotRateData != null) {
+// Updated ProductService.fixPrice method (replace the existing fixPrice method)
 
-                        } else {
-                        }
-                      }
+  );
 
-                      // In the UI button onTapped method - replace the booking preparation section:
+  try {
+    final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+    final goldRateProvider = Provider.of<GoldRateProvider>(context, listen: false);
 
-                      List<Map<String, dynamic>> bookingDataWithMakingCharges =
-                          [];
-                      List bookingData =
-                          widget.orderData["bookingData"] as List;
-                      dev.log('=== PREPARING BOOKING DATA ===');
-                      dev.log(
-                          'Original orderData: ${jsonEncode(widget.orderData)}');
-                      dev.log('Items to process: ${bookingData.length}');
+    // STEP 1: Prepare fix price payload with current live rates
+    List<Map<String, dynamic>> fixPriceBookingData = [];
+    List bookingData = widget.orderData["bookingData"] as List;
+    
+    dev.log('=== STEP 1: PREPARING FIX PRICE DATA ===');
+    dev.log('Items to fix price: ${bookingData.length}');
 
-                      for (var item in bookingData) {
-                        String productId = item["productId"];
-                        int quantity = item["quantity"] ?? 1;
+    for (var item in bookingData) {
+      String productId = item["productId"];
+      int quantity = item["quantity"] ?? 1;
 
-                        dev.log(
-                            'Processing item - ProductId: $productId, Quantity: $quantity');
+      Product? product = productViewModel.productList.firstWhere(
+        (p) => p.pId == productId,
+        orElse: () => throw Exception("Product not found: $productId"),
+      );
 
-                        Product product =
-                            productViewModel.productList.firstWhere(
-                          (p) => p.pId == productId,
-                          orElse: () =>
-                              throw Exception("Product not found: $productId"),
-                        );
+      // Calculate current live price using unified calculation
+      Map<String, double> currentPricing = calculateProductPricing(
+        product: product,
+        quantity: 1, // Fix price per unit first
+        goldRateProvider: goldRateProvider,
+        calculationContext: "FIX_PRICE for $productId",
+      );
 
-                        dev.log(
-                            'Found product - Making Charge: ${product.makingCharge}');
+      double currentUnitPrice = currentPricing['unitPrice']!;
 
-                        for (int i = 0; i < quantity; i++) {
-                          final bookingItem = {
-                            "productId": productId,
-                            "makingCharge": product.makingCharge.toDouble()
-                          };
-                          bookingDataWithMakingCharges.add(bookingItem);
-                          dev.log(
-                              'Added booking item ${i + 1}/$quantity: ${jsonEncode(bookingItem)}');
-                        }
-                      }
+      // Add each unit separately for fix price
+      for (int i = 0; i < quantity; i++) {
+        final fixPriceItem = {
+          "productId": productId,
+          "fixedPrice": currentUnitPrice.round(), // Round to integer as per API example
+        };
+        fixPriceBookingData.add(fixPriceItem);
+        
+        dev.log('Added fix price item ${i + 1}/$quantity: ProductId=$productId, FixedPrice=${currentUnitPrice.round()} AED');
+      }
+    }
 
-                      final bookingPayload = {
-                        "paymentMethod": widget.orderData["paymentMethod"],
-                        "bookingData": bookingDataWithMakingCharges,
-                        "deliveryDate": widget.orderData["deliveryDate"],
-                        "address": widget.orderData["address"],
-                        "contact": widget.orderData["contact"]
-                      };
+    final fixPricePayload = {
+      "bookingData": fixPriceBookingData,
+    };
 
-                      dev.log('=== FINAL BOOKING PAYLOAD ===');
-                      dev.log(
-                          'PaymentMethod: ${bookingPayload["paymentMethod"]}');
-                      dev.log(
-                          'BookingData items: ${bookingDataWithMakingCharges.length}');
-                      dev.log(
-                          'Complete payload: ${jsonEncode(bookingPayload)}');
-                      dev.log('==============================');
+    dev.log('=== FIX PRICE PAYLOAD ===');
+    dev.log('Total items to fix: ${fixPriceBookingData.length}');
+    dev.log('Complete payload: ${jsonEncode(fixPricePayload)}');
+    dev.log('========================');
 
-                      dev.log(
-                          "Booking payload being sent: ${jsonEncode(bookingPayload)}");
+    // STEP 2: Call fix price API
+    dev.log('🔒 STEP 2: Calling fix price API...');
+    final fixPriceResult = await productViewModel.fixPrice(fixPricePayload);
 
-                      final bookingResult =
-                          await productViewModel.bookProducts(bookingPayload);
+    if (fixPriceResult == null || fixPriceResult.success != true) {
+      Navigator.of(context).pop(); // Close loading dialog
+      
+      showOrderStatusSnackBar(
+        context: context,
+        isSuccess: false,
+        message: fixPriceResult?.message ?? 'Failed to fix price',
+      );
+      return;
+    }
 
-                      Navigator.of(context).pop();
+    dev.log('✅ Price fixed successfully');
 
-                      if (bookingResult != null && bookingResult.success!) {
-                        productViewModel.clearQuantities();
+    // STEP 3: Prepare booking payload with fixed prices
+    dev.log('📦 STEP 3: Preparing booking with fixed prices...');
+    List<Map<String, dynamic>> bookingDataWithMakingCharges = [];
 
-                        final cartViewModel =
-                            Provider.of<CartViewModel>(context, listen: false);
-                        await cartViewModel.clearCart();
-                        productViewModel.clearQuantities();
+    for (var fixedItem in fixPriceBookingData) {
+      String productId = fixedItem["productId"];
+      
+      Product? product = productViewModel.productList.firstWhere(
+        (p) => p.pId == productId,
+        orElse: () => throw Exception("Product not found: $productId"),
+      );
 
-                        widget.onConfirm(
-                            {"success": true, "bookingData": bookingResult});
+      final bookingItem = {
+        "productId": productId,
+        "makingCharge": product.makingCharge.toDouble(),
+      };
+      bookingDataWithMakingCharges.add(bookingItem);
+      
+      dev.log('Added booking item: ProductId=$productId, MakingCharge=${product.makingCharge}');
+    }
 
-                        showOrderStatusSnackBar(
-                          context: context,
-                          isSuccess: true,
-                          message: 'Booking success',
-                        );
+    final bookingPayload = {
+      "paymentMethod": widget.orderData["paymentMethod"],
+      "bookingData": bookingDataWithMakingCharges,
+      "deliveryDate": widget.orderData["deliveryDate"],
+      "address": widget.orderData["address"],
+      "contact": widget.orderData["contact"],
+      "priceFixed": true, // Flag to indicate prices are fixed
+    };
 
-                        Navigator.pop(context, {"orderSuccess": true});
-                      } else {
-                        showOrderStatusSnackBar(
-                          context: context,
-                          isSuccess: false,
-                          message: bookingResult?.message ?? 'Booking failed',
-                        );
+    dev.log('=== FINAL BOOKING PAYLOAD ===');
+    dev.log('PaymentMethod: ${bookingPayload["paymentMethod"]}');
+    dev.log('BookingData items: ${bookingDataWithMakingCharges.length}');
+    dev.log('PriceFixed: ${bookingPayload["priceFixed"]}');
+    dev.log('Complete payload: ${jsonEncode(bookingPayload)}');
+    dev.log('==============================');
 
-                        Navigator.pop(context, {"orderSuccess": false});
-                      }
-                    } catch (e) {
-                      dev.log(
-                          "Error during order confirmation: ${e.toString()}");
-                      Navigator.of(context).pop();
+    // STEP 4: Book products with fixed prices
+    dev.log('🛒 STEP 4: Booking products with fixed prices...');
+    final bookingResult = await productViewModel.bookProducts(bookingPayload);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'An error occurred: ${e.toString()}',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+    Navigator.of(context).pop(); // Close loading dialog
 
-                      Navigator.pop(context,
-                          {"orderSuccess": false, "error": e.toString()});
-                    }
-                  },
+    if (bookingResult != null && bookingResult.success == true) {
+      dev.log('✅ BOOKING SUCCESSFUL');
+      
+      // Clear cart and quantities
+      productViewModel.clearQuantities();
+      final cartViewModel = Provider.of<CartViewModel>(context, listen: false);
+      await cartViewModel.clearCart();
+
+      // Show success message
+      showOrderStatusSnackBar(
+        context: context,
+        isSuccess: true,
+        message: 'Order placed successfully with fixed prices!',
+      );
+
+      // Call onConfirm callback
+      widget.onConfirm({
+        "success": true, 
+        "bookingData": bookingResult,
+        "fixedPrices": fixPriceBookingData,
+      });
+
+      // Navigate back to home with success result
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      
+      dev.log('🏠 Navigated back to home screen successfully');
+      
+    } else {
+      dev.log('❌ BOOKING FAILED: ${bookingResult?.message}');
+      
+      showOrderStatusSnackBar(
+        context: context,
+        isSuccess: false,
+        message: bookingResult?.message ?? 'Booking failed after price fix',
+      );
+    }
+
+  } catch (e) {
+    dev.log('💥 ERROR during fix price + booking process: ${e.toString()}');
+    Navigator.of(context).pop(); // Close loading dialog
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Order failed: ${e.toString()}',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 5),
+      ),
+    );
+  }
+},
                   btnTextColor: UIColor.gold,
                   btnText: 'Confirm Order',
                 ),

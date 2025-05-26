@@ -305,28 +305,60 @@ static Future<List<dynamic>> fetchProducts([String? adminId, String? categoryId]
   }
 }
 
-  static Future<MessageModel?> fixPrice(Map<String, dynamic> payload) async {
-    try {
-      log('Fixing price with payload: ${payload.toString()}');
-      var response = await client.put(Uri.parse(fixPriceUrl),
-          headers: {
-            'X-Secret-Key': secreteKey,
-            'Content-Type': 'application/json'
-          },
-          body: jsonEncode(payload));
+static Future<MessageModel?> fixPrice(Map<String, dynamic> payload) async {
+  try {
+    // final userId = await LocalStorage.getString('userId') ?? '';
+    // if (userId.isEmpty) {
+    //   log('Error: userId is empty for fix price');
+    //   return MessageModel.fromJson({
+    //     'success': false, 
+    //     'message': 'User ID is missing'
+    //   });
+    // }
 
-      if (response.statusCode == 200) {
-        return MessageModel.fromJson({'success': true});
-      } else {
-        log('Failed to fix price, status: ${response.statusCode}');
+    // Use the correct endpoint with userId
+    final url = 'https://api.nova.aurify.ae/user//products/fix-prices';
+    
+    log('🔒 === FIXING PRICE API CALL ===');
+    log('URL: $url');
+    log('Payload: ${jsonEncode(payload)}');
+    
+    var response = await client.put( // Changed from PUT to POST
+      Uri.parse(url),
+      headers: {
+        'X-Secret-Key': secreteKey,
+        'Content-Type': 'application/json'
+      },
+      body: jsonEncode(payload)
+    );
+
+    log('Fix Price Response Status: ${response.statusCode}');
+    log('Fix Price Response Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+      log('✅ Price fixed successfully');
+      return MessageModel.fromJson(responseData);
+    } else {
+      log('❌ Failed to fix price, status: ${response.statusCode}');
+      try {
         Map<String, dynamic> responseData = jsonDecode(response.body);
         return MessageModel.fromJson(responseData);
+      } catch (e) {
+        return MessageModel.fromJson({
+          'success': false, 
+          'message': 'Failed to fix price: HTTP ${response.statusCode}'
+        });
       }
-    } catch (e) {
-      log('Error fixing price: ${e.toString()}');
-      return null;
     }
+  } catch (e) {
+    log('💥 Error fixing price: ${e.toString()}');
+    return MessageModel.fromJson({
+      'success': false, 
+      'message': 'Failed to fix price: ${e.toString()}'
+    });
   }
+}
 
   // In ProductService.bookProducts method - replace the existing logging section:
 
