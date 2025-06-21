@@ -10,6 +10,7 @@ import 'package:swiss_gold/core/view_models/auth_view_model.dart';
 import 'package:swiss_gold/core/view_models/cart_view_model.dart';
 import 'package:swiss_gold/core/view_models/company_profile_view_model.dart';
 import 'package:swiss_gold/core/view_models/order_history_view_model.dart';
+import 'package:swiss_gold/core/view_models/pending_provider.dart';
 import 'package:swiss_gold/core/view_models/product_view_model.dart';
 import 'package:swiss_gold/core/view_models/profile_view_model.dart';
 import 'package:swiss_gold/core/view_models/transaction_view_model.dart';
@@ -47,6 +48,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => CompanyProfileViewModel()),
           ChangeNotifierProvider(create: (context) => OrderHistoryViewModel()),
           ChangeNotifierProvider(create: (context) => TransactionViewModel()),
+          ChangeNotifierProvider(create: (context) => PendingOrdersProvider()),
           // ChangeNotifierProvider(create: (context) => LiveRateProvider()),
           ChangeNotifierProvider(create: (context) => GoldRateProvider()),
 

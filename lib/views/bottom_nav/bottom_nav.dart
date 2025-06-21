@@ -9,6 +9,7 @@ import 'package:swiss_gold/core/utils/image_assets.dart';
 import 'package:swiss_gold/views/bottom_nav/no_internet_view.dart';
 import 'package:swiss_gold/views/notification/notification_view.dart';
 import 'package:swiss_gold/views/order_history/order_history.dart';
+import 'package:swiss_gold/views/pending_orders/pending_approval_screen.dart';
 import 'package:swiss_gold/views/support/contact_view.dart';
 import 'package:swiss_gold/views/home/home_view.dart';
 import 'package:swiss_gold/views/more/more_view.dart';
@@ -87,7 +88,7 @@ class _BottomNavState extends State<BottomNav> {
     }
   }
 
-  List screens = [HomeView(), OrderHistory(), ContactView(), MoreView()];
+  List screens = [HomeView(), OrderHistory(),  PendingApprovalScreen(),ContactView(), MoreView()];
 
   @override
   void initState() {
@@ -180,6 +181,12 @@ class _BottomNavState extends State<BottomNav> {
                   size: 32.sp,
                 ),
                 label: 'Orders'),
+            BottomNavigationBarItem(
+                icon: Icon(
+                  PhosphorIcons.list(),
+                  size: 32.sp,
+                ),
+                label: 'Approval pending'),
             BottomNavigationBarItem(
                 icon: Icon(
                   PhosphorIcons.headset(),
