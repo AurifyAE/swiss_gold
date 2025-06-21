@@ -28,7 +28,7 @@ double calculatePurityPower(dynamic purity) {
       return 0.375;
     }
 
-    // dev.log(
-    //     '🧮 Standardized purity calculation: purity=$purity → cleaned=$purityStr, digits=$digitCount, power=$powerOfTen, result=$result');
+    dev.log(
+        '🧮 Standardized purity calculation: purity=$purity → cleaned=$purityStr, digits=$digitCount, power=$powerOfTen, result=$result');
     return result;
   }

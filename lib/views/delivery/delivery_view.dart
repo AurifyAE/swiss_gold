@@ -11,7 +11,6 @@ import 'package:swiss_gold/core/utils/widgets/custom_outlined_btn.dart';
 import 'package:swiss_gold/core/view_models/product_view_model.dart';
 import 'package:swiss_gold/core/services/server_provider.dart';
 
-import '../../core/services/local_storage.dart';
 import '../../core/utils/calculations/bid_price_calculation.dart';
 import '../../core/utils/calculations/total_amount_calculation.dart';
 import '../../core/utils/widgets/snakbar.dart';
@@ -41,7 +40,7 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
     double totalWeight = 0.0;
     List bookingData = widget.orderData["bookingData"] as List;
 
-    // dev.log("Starting total weight calculation with 3 digit precision...");
+    dev.log("Starting total weight calculation with 3 digit precision...");
 
     for (var item in bookingData) {
       String productId = item["productId"];
@@ -54,30 +53,30 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
       double productWeight = double.parse(product.weight.toStringAsFixed(3));
       totalWeight += productWeight * quantity;
 
-      // dev.log(
-      //     "Product $productId: weight=${productWeight}g × quantity=$quantity = ${(productWeight * quantity).toStringAsFixed(3)}g");
+      dev.log(
+          "Product $productId: weight=${productWeight}g × quantity=$quantity = ${(productWeight * quantity).toStringAsFixed(3)}g");
     }
 
-    // dev.log(
-    //     "Final total weight calculation: ${totalWeight.toStringAsFixed(3)}g");
+    dev.log(
+        "Final total weight calculation: ${totalWeight.toStringAsFixed(3)}g");
     return totalWeight;
   }
 
   @override
   void initState() {
     super.initState();
-    // dev.log("Initializing DeliveryDetailsView");
+    dev.log("Initializing DeliveryDetailsView");
 
     Future.microtask(() {
       final goldRateProvider =
           Provider.of<GoldRateProvider>(context, listen: false);
       if (!goldRateProvider.isConnected || goldRateProvider.goldData == null) {
-        // dev.log(
-        //     "Initializing gold rate connection - Current status: isConnected=${goldRateProvider.isConnected}, hasData=${goldRateProvider.goldData != null}");
+        dev.log(
+            "Initializing gold rate connection - Current status: isConnected=${goldRateProvider.isConnected}, hasData=${goldRateProvider.goldData != null}");
         goldRateProvider.initializeConnection();
       } else {
-        // dev.log(
-        //     "Gold rate already connected - Current bid: ${goldRateProvider.goldData!['bid']}");
+        dev.log(
+            "Gold rate already connected - Current bid: ${goldRateProvider.goldData!['bid']}");
       }
     });
   }
@@ -98,10 +97,10 @@ class _DeliveryDetailsViewState extends State<DeliveryDetailsView> {
     double bidPrice =
         calculateBidPriceForDisplay(goldRateProvider, productViewModel);
 
-    // dev.log("📊 Summary - Payment method: ${isGoldPayment ? 'Gold' : 'Cash'}");
-    // dev.log("📊 Summary - Total weight: $totalWeight g");
-    // dev.log("📊 Summary - Total amount: $totalAmount AED");
-    // dev.log("📊 Summary - Current bid price: $bidPrice AED/g");
+    dev.log("📊 Summary - Payment method: ${isGoldPayment ? 'Gold' : 'Cash'}");
+    dev.log("📊 Summary - Total weight: $totalWeight g");
+    dev.log("📊 Summary - Total amount: $totalAmount AED");
+    dev.log("📊 Summary - Current bid price: $bidPrice AED/g");
 
     return Scaffold(
       appBar: AppBar(

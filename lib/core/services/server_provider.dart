@@ -56,7 +56,7 @@ class GoldRateProvider extends ChangeNotifier {
       //   await fetchSpotRates();
       // }
     } catch (e) {
-      dev.log("Error initializing connection: $e");
+      // dev.log("Error initializing connection: $e");
       await connectToSocket(link: _serverLink);
     } finally {
       _isLoading = false;
@@ -66,10 +66,10 @@ class GoldRateProvider extends ChangeNotifier {
 
   // Fetch server link from API
   Future<String> fetchServerLink() async {
-    dev.log('Fetching server link');
+    // dev.log('Fetching server link');
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/get-server'),
+        Uri.parse('https://api.aurify.ae/user/get-server'),
         headers: {
           'X-Secret-Key': secreteKey,
           'Content-Type': 'application/json',
@@ -80,21 +80,21 @@ class GoldRateProvider extends ChangeNotifier {
         Map<String, dynamic> data = json.decode(response.body);
         if (data.containsKey('info') && data['info'].containsKey('serverUrl')) {
           String serverUrl = data['info']['serverUrl'];
-          dev.log('Received server link: $serverUrl');
+          // dev.log('Received server link: $serverUrl');
           return serverUrl;
         }
       }
-      dev.log('Using default server link: $_serverLink');
+      // dev.log('Using default server link: $_serverLink');
       return _serverLink;
     } catch (e) {
-      dev.log("Error fetching server link: $e");
+      // dev.log("Error fetching server link: $e");
       return _serverLink;
     }
   }
 
   // Connect to socket and start listening for gold data
   Future<void> connectToSocket({required String link}) async {
-    dev.log('Connecting to socket at: $link');
+    // dev.log('Connecting to socket at: $link');
     try {
       _socket = io.io(link, {
         'transports': ['websocket'],
@@ -105,7 +105,7 @@ class GoldRateProvider extends ChangeNotifier {
       });
 
       _socket?.onConnect((_) {
-        dev.log("Socket connected successfully");
+        // dev.log("Socket connected successfully");
         _isConnected = true;
         notifyListeners();
         
@@ -118,13 +118,13 @@ class GoldRateProvider extends ChangeNotifier {
       });
 
       _socket?.onConnectError((data) {
-        dev.log("Socket connection error: $data");
+        // dev.log("Socket connection error: $data");
         _isConnected = false;
         notifyListeners();
       });
 
       _socket?.onDisconnect((_) {
-        dev.log("Socket disconnected");
+        // dev.log("Socket disconnected");
         _isConnected = false;
         attemptReconnection();
         notifyListeners();
@@ -132,7 +132,7 @@ class GoldRateProvider extends ChangeNotifier {
 
       _socket?.connect();
     } catch (e) {
-      dev.log("Error connecting to socket: $e");
+      // dev.log("Error connecting to socket: $e");
       attemptReconnection();
     }
   }
@@ -154,13 +154,13 @@ class GoldRateProvider extends ChangeNotifier {
         
         _goldData = processedData;
         
-        dev.log('Gold Rate Details:');
-        dev.log('Bid: ${_goldData!['bid'] ?? 'N/A'}');
-        dev.log('Ask: ${_goldData!['ask'] ?? 'N/A'}');
-        dev.log('High: ${_goldData!['high'] ?? 'N/A'}');
-        dev.log('Low: ${_goldData!['low'] ?? 'N/A'}');
-        dev.log('Symbol: ${_goldData!['symbol'] ?? 'N/A'}');
-        dev.log('Last Updated: ${_goldData!['timestamp'] ?? 'N/A'}');
+        // dev.log('Gold Rate Details:');
+        // dev.log('Bid: ${_goldData!['bid'] ?? 'N/A'}');
+        // dev.log('Ask: ${_goldData!['ask'] ?? 'N/A'}');
+        // dev.log('High: ${_goldData!['high'] ?? 'N/A'}');
+        // dev.log('Low: ${_goldData!['low'] ?? 'N/A'}');
+        // dev.log('Symbol: ${_goldData!['symbol'] ?? 'N/A'}');
+        // dev.log('Last Updated: ${_goldData!['timestamp'] ?? 'N/A'}');
         
         // Log calculated prices with the new formula if spot rate data is available
         if (_spotRateData != null) {
@@ -170,19 +170,19 @@ class GoldRateProvider extends ChangeNotifier {
             double biddingPrice = bid + _spotRateData!.goldBidSpread;
             double askingPrice = biddingPrice + _spotRateData!.goldAskSpread + 0.5;
             
-            dev.log('Calculated Prices:');
-            dev.log('Original Bid: $bid');
-            dev.log('Bid Spread: ${_spotRateData!.goldBidSpread}');
-            dev.log('Bidding Price: $biddingPrice (Bid + Bid Spread)');
-            dev.log('Ask Spread: ${_spotRateData!.goldAskSpread}');
-            dev.log('Asking Price: $askingPrice (Bidding Price + Ask Spread + 0.5)');
+            // dev.log('Calculated Prices:');
+            // dev.log('Original Bid: $bid');
+            // dev.log('Bid Spread: ${_spotRateData!.goldBidSpread}');
+            // dev.log('Bidding Price: $biddingPrice (Bid + Bid Spread)');
+            // dev.log('Ask Spread: ${_spotRateData!.goldAskSpread}');
+            // dev.log('Asking Price: $askingPrice (Bidding Price + Ask Spread + 0.5)');
           }
         }
         
         notifyListeners();
       }
     } catch (e) {
-      dev.log("Error handling gold data: $e");
+      // dev.log("Error handling gold data: $e");
     }
   }
 
@@ -224,7 +224,7 @@ class GoldRateProvider extends ChangeNotifier {
   void requestGoldData() {
     try {
       _socket?.emit('request-data', [["Gold"]]);
-      dev.log('Requested Gold data only');
+      // dev.log('Requested Gold data only');
     } catch (e) {
       dev.log('Error requesting Gold data: $e');
     }
@@ -233,21 +233,21 @@ class GoldRateProvider extends ChangeNotifier {
   // Calculate asking price using the formula: bid + bidspread = bidding price; bidding price + ask spread + 0.5 = asking price
   double? calculateAskingPrice() {
     if (_goldData == null || _spotRateData == null) {
-      dev.log('Cannot calculate asking price: missing data');
+      // dev.log('Cannot calculate asking price: missing data');
       return null;
     }
     
     double? bid = _goldData!['bid'] is num ? (_goldData!['bid'] as num).toDouble() : null;
     
     if (bid == null) {
-      dev.log('Cannot calculate asking price: bid is null');
+      // dev.log('Cannot calculate asking price: bid is null');
       return null;
     }
     
     double biddingPrice = bid + _spotRateData!.goldBidSpread;
     double askingPrice = biddingPrice + _spotRateData!.goldAskSpread + 0.5;
     
-    dev.log('Calculated asking price: $askingPrice');
+    // dev.log('Calculated asking price: $askingPrice');
     return askingPrice;
   }
 
@@ -255,7 +255,7 @@ class GoldRateProvider extends ChangeNotifier {
   void attemptReconnection() {
     if (!_isConnected) {
       Future.delayed(Duration(seconds: 5), () {
-        dev.log("Attempting to reconnect...");
+        // dev.log("Attempting to reconnect...");
         initializeConnection();
       });
     }
@@ -264,19 +264,19 @@ class GoldRateProvider extends ChangeNotifier {
   // Manual reconnect method
   void reconnect() {
     try {
-      dev.log('Manual reconnection initiated');
+      // dev.log('Manual reconnection initiated');
       _socket?.disconnect();
       initializeConnection();
     } catch (e) {
-      dev.log("Error during manual reconnection: $e");
+      // dev.log("Error during manual reconnection: $e");
     }
   }
 
   // Refresh gold data and spot rates
   Future<Map<String, dynamic>?> refreshGoldData() async {
-    dev.log('Refreshing gold data');
+    // dev.log('Refreshing gold data');
     if (!_isConnected) {
-      dev.log('Socket not connected. Initializing connection...');
+      // dev.log('Socket not connected. Initializing connection...');
       await initializeConnection();
       // Wait for the connection to establish
       await Future.delayed(Duration(seconds: 2));
@@ -296,7 +296,7 @@ class GoldRateProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    dev.log('Disposing GoldRateProvider');
+    // dev.log('Disposing GoldRateProvider');
     _socket?.disconnect();
     super.dispose();
   }

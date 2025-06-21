@@ -1,0 +1,2 @@
+/Users/Shared/flutter_apps/swiss_gold/android/app/.cxx/RelWithDebInfo/201v672f/x86_64/CMakeFiles/edit_cache.dir
+/Users/Shared/flutter_apps/swiss_gold/android/app/.cxx/RelWithDebInfo/201v672f/x86_64/CMakeFiles/rebuild_cache.dir

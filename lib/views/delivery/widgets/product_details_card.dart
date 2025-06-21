@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/services/server_provider.dart';
 import '../../../core/utils/calculations/get_product.dart';
-import '../../../core/utils/calculations/purity_calculation.dart';
 import '../../../core/utils/calculations/total_amount_calculation.dart';
 import '../../../core/utils/colors.dart';
 import '../../../core/utils/money_format_heper.dart';

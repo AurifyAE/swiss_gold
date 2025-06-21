@@ -248,7 +248,7 @@ static Future<List<dynamic>> fetchProducts([String? adminId, String? categoryId]
     String userSpotRateId = hasUserSpotRateId ? userStatus['userSpotRateId'] : '';
     
     // Determine which parameters to use based on user status
-    String baseUrl = 'https://api.nova.aurify.ae/user/get-product';
+    String baseUrl = 'https://api.nova.aurify.ae/user/get-product'; 
     String url;
     
     if (hasCategoryId) {

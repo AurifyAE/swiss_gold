@@ -1,4 +1,4 @@
-const String baseUrl = 'https://api.aurify.ae/user';
+// const String baseUrl = 'https://api.aurify.ae/user';
 const String newBaseUrl = 'https://api.nova.aurify.ae/user';
 
 
@@ -34,7 +34,7 @@ const String decrementQuantityUrl =
 
 // const String changePasswordUrl = '$newBaseUrl/forgot-password/{userId}';
 
-const String getServerUrl = '$baseUrl/get-server';
+const String getServerUrl = 'https://api.aurify.ae/user/get-server';
 
 // const String getBannerUrl = '$baseUrl/get-banner/$adminId';
 
@@ -46,7 +46,7 @@ const String fixPriceUrl = '$newBaseUrl/products/fix-prices';
 
 const String bookingUrl = '$newBaseUrl/booking/$adminId/{userId}';
 
-const String changePassUrl = '$baseUrl/forgot-password/$adminId';
+const String changePassUrl = 'https://api.aurify.ae/user/forgot-password/$adminId';
 
 const String getVideoBannerUrl = 'https://api.aurify.ae/user/get-VideoBanner/67586119baf55a80a8277f01';
 
@@ -58,6 +58,6 @@ const String getOrderHistoryUrl =
 // const String getSpotRateUrl = 'https://api.aurify.ae/user/get-spotrates/67586119baf55a80a8277f01';
 
 const String updateQuantityFromHomeUrl =
-    '$baseUrl/cart/update-quantity/$adminId/{userId}/{pId}';
+    'https://api.aurify.ae/user/cart/update-quantity/$adminId/{userId}/{pId}';
     
-const String pricingUrl = '$baseUrl/pricing/latest/$adminId?methodType={type}';
+const String pricingUrl = 'https://api.aurify.ae/user/pricing/latest/$adminId?methodType={type}';
