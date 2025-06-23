@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:swiss_gold/core/utils/colors.dart';
 
 import '../../../core/models/pending_order_model.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -25,7 +26,7 @@ class PendingOrderCard extends StatelessWidget {
             // color: Colors.grey[900],
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFFD4AF37).withOpacity(0.3),
+              color: UIColor.gold,
               width: 1,
             ),
           ),
@@ -43,8 +44,8 @@ class PendingOrderCard extends StatelessWidget {
                         children: [
                           Text(
                             'Order #${order.transactionId}',
-                            style: const TextStyle(
-                              color: Color(0xFFD4AF37),
+                            style:  TextStyle( 
+                              color: UIColor.gold, 
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -94,7 +95,7 @@ class PendingOrderCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: const Color(0xFFD4AF37).withOpacity(0.3),
+                            color: UIColor.gold, 
                             width: 1,
                           ),
                         ),
@@ -155,8 +156,8 @@ class PendingOrderCard extends StatelessWidget {
                       children: [
                         Text(
                           CurrencyFormatter.formatAED(order.totalPrice),
-                          style: const TextStyle(
-                            color: Color(0xFFD4AF37),
+                          style: TextStyle(
+                            color: UIColor.gold, 
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -174,8 +175,8 @@ class PendingOrderCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Divider(
-                  color: Color(0xFFD4AF37),
+                 Divider( 
+                  color: UIColor.gold,
                   thickness: 0.5,
                 ),
                 const SizedBox(height: 8),
@@ -189,9 +190,9 @@ class PendingOrderCard extends StatelessWidget {
                         fontSize: 12,
                       ),
                     ),
-                    const Icon(
+                     Icon(
                       Icons.arrow_forward_ios,
-                      color: Color(0xFFD4AF37),
+                      color: UIColor.gold, 
                       size: 16,
                     ),
                   ],

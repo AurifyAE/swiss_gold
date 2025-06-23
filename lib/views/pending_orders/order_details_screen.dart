@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:swiss_gold/core/utils/colors.dart';
 
 import '../../core/models/pending_order_model.dart';
+import '../../core/services/local_storage.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/date_formatter.dart';
-// import '../models/pending_order_model.dart';
-// import '../utils/date_formatter.dart';
-// import '../utils/currency_formatter.dart';
-// import '../widgets/product_image_carousel.dart';
+import '../../core/view_models/pending_provider.dart';
 
-class OrderDetailsScreen extends StatelessWidget {
+class OrderDetailsScreen extends StatefulWidget {
   final PendingOrder order;
 
   const OrderDetailsScreen({
@@ -17,6 +17,11 @@ class OrderDetailsScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
+}
+
+class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
@@ -24,13 +29,13 @@ class OrderDetailsScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37)),
+          icon: Icon(Icons.arrow_back, color: UIColor.gold),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Order Details',
           style: TextStyle(
-            color: Color(0xFFD4AF37),
+            color: UIColor.gold,
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
@@ -67,20 +72,19 @@ class OrderDetailsScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        // color: Colors.grey[900],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFD4AF37).withOpacity(0.3),
+          color: UIColor.gold,
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
+          Text(
             'Order Summary',
             style: TextStyle(
-              color: Color(0xFFD4AF37),
+              color: UIColor.gold,
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
@@ -92,16 +96,16 @@ class OrderDetailsScreen extends StatelessWidget {
               color: Colors.black.withOpacity(0.3),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: const Color(0xFFD4AF37).withOpacity(0.5),
+                color: UIColor.gold,
                 width: 1,
               ),
             ),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'User Approval Pending',
                   style: TextStyle(
-                    color: Color(0xFFD4AF37),
+                    color: UIColor.gold,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -116,9 +120,9 @@ class OrderDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Total Amount: ${CurrencyFormatter.formatAED(order.totalPrice)}',
-                  style: const TextStyle(
-                    color: Color(0xFFD4AF37),
+                  'Total Amount: ${CurrencyFormatter.formatAED(widget.order.totalPrice)}',
+                  style: TextStyle(
+                    color: UIColor.gold,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -136,19 +140,18 @@ class OrderDetailsScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        // color: Colors.grey[900],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFD4AF37).withOpacity(0.3),
+          color: UIColor.gold,
           width: 1,
         ),
       ),
       child: Column(
         children: [
-          _buildDetailRow('Payment Method:', order.paymentMethod),
-          _buildDetailRow('Delivery Date:', DateFormatter.formatDeliveryDate(order.orderDate)),
-          _buildDetailRow('Total Items:', '${order.items.length}'),
-          _buildDetailRow('Total Amount:', CurrencyFormatter.formatAED(order.totalPrice)),
+          _buildDetailRow('Payment Method:', widget.order.paymentMethod),
+          _buildDetailRow('Delivery Date:', DateFormatter.formatDeliveryDate(widget.order.orderDate)),
+          _buildDetailRow('Total Items:', '${widget.order.items.length}'),
+          _buildDetailRow('Total Amount:', CurrencyFormatter.formatAED(widget.order.totalPrice)),
         ],
       ),
     );
@@ -159,26 +162,25 @@ class OrderDetailsScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        // color: Colors.grey[900],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFFD4AF37).withOpacity(0.3),
+          color: UIColor.gold,
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Product Details',
             style: TextStyle(
-              color: Color(0xFFD4AF37),
+              color: UIColor.gold,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 16),
-          ...order.items.map((item) => _buildProductItem(item)).toList(),
+          ...widget.order.items.map((item) => _buildProductItem(item)).toList(),
         ],
       ),
     );
@@ -192,22 +194,17 @@ class OrderDetailsScreen extends StatelessWidget {
         color: Colors.black.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFFD4AF37).withOpacity(0.5),
+          color: UIColor.gold,
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Product Images
-          // if (item.productId.images.isNotEmpty)
-          //   ProductImageCarousel(images: item.productId.images),
-          // const SizedBox(height: 12),
-          
           Text(
             item.productId.title,
-            style: const TextStyle(
-              color: Color(0xFFD4AF37),
+            style: TextStyle(
+              color: UIColor.gold,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -240,8 +237,8 @@ class OrderDetailsScreen extends StatelessWidget {
           ),
           Text(
             value,
-            style: const TextStyle(
-              color: Color(0xFFD4AF37),
+            style: TextStyle(
+              color: UIColor.gold,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -257,7 +254,6 @@ class OrderDetailsScreen extends StatelessWidget {
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              // Handle reject action
               _showRejectDialog(context);
             },
             style: ElevatedButton.styleFrom(
@@ -281,11 +277,10 @@ class OrderDetailsScreen extends StatelessWidget {
         Expanded(
           child: ElevatedButton(
             onPressed: () {
-              // Handle approve action
               _showApproveDialog(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD4AF37),
+              backgroundColor: UIColor.gold,
               foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -305,198 +300,265 @@ class OrderDetailsScreen extends StatelessWidget {
     );
   }
 
-  void _showRejectDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        // backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Reject Order',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Are you sure you want to reject this order?',
-          style: TextStyle(color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
+  void _showApproveDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.grey[900],
+      title: const Text(
+        'Approve Order',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: const Text(
+        'Are you sure you want to approve this order?',
+        style: TextStyle(color: Colors.grey),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Handle reject logic here
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Order rejected successfully'),
+        ),
+        TextButton(
+          onPressed: () async {
+            // Get the navigator first
+            final navigator = Navigator.of(context);
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
+            
+            // Close the dialog first
+            navigator.pop();
+            
+            // Show loading indicator
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => Center(
+                child: CircularProgressIndicator(
+                  color: UIColor.gold,
+                ),
+              ),
+            );
+
+            try {
+              // Get userId from LocalStorage
+              final userId = await LocalStorage.getString('userId') ?? '';
+              
+              if (userId.isEmpty) {
+                navigator.pop(); // Close loading dialog
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('User ID not found. Please login again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              // Get provider reference
+              final provider = Provider.of<PendingOrdersProvider>(context, listen: false);
+              bool success = true;
+              
+              // Approve all items in the order
+              for (final item in widget.order.items) {
+                final itemSuccess = await provider.approveOrderItem(
+                  orderId: widget.order.id,
+                  itemId: item.id,
+                  userId: userId,
+                  quantity: item.quantity,
+                  fixedPrice: item.fixedPrice,
+                  productWeight: item.productWeight,
+                );
+                if (!itemSuccess) {
+                  success = false;
+                  break; // Stop on first failure
+                }
+              }
+
+              navigator.pop(); // Close loading dialog
+
+              if (success) {
+                navigator.pop(); // Go back to previous screen
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Order approved successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to approve order. Please try again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            } catch (e) {
+              navigator.pop(); // Close loading dialog
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${e.toString()}'),
                   backgroundColor: Colors.red,
                 ),
               );
-            },
-            child: const Text(
-              'Reject',
-              style: TextStyle(color: Colors.red),
-            ),
+            }
+          },
+          child: Text(
+            'Approve',
+            style: TextStyle(color: UIColor.gold),
           ),
-        ],
-      ),
-    );
-  }
-
-  void _showApproveDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        // backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Approve Order',
-          style: TextStyle(color: Colors.white),
         ),
-        content: const Text(
-          'Are you sure you want to approve this order?',
-          style: TextStyle(color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Handle approve logic here
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Order approved successfully'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text(
-              'Approve',
-              style: TextStyle(color: Color(0xFFD4AF37)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }
 
-// lib/widgets/product_image_carousel.dart
-// import 'package:flutter/material.dart';
-// import '../models/pending_order_model.dart';
+void _showRejectDialog(BuildContext context) {
+  final TextEditingController reasonController = TextEditingController();
+  
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.grey[900],
+      title: const Text(
+        'Reject Order',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Are you sure you want to reject this order?',
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: reasonController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Rejection Reason',
+              labelStyle: const TextStyle(color: Colors.grey),
+              border: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey[600]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey[600]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: UIColor.gold),
+              ),
+            ),
+            maxLines: 3,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+        TextButton(
+          onPressed: () async {
+            if (reasonController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please provide a rejection reason'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
 
-// class ProductImageCarousel extends StatefulWidget {
-//   final List<ProductImage> images;
+            // Get the navigator first
+            final navigator = Navigator.of(context);
+            final scaffoldMessenger = ScaffoldMessenger.of(context);
+            
+            // Close the dialog first
+            navigator.pop();
+            
+            // Show loading indicator
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => Center(
+                child: CircularProgressIndicator(
+                  color: UIColor.gold,
+                ),
+              ),
+            );
 
-//   const ProductImageCarousel({
-//     Key? key,
-//     required this.images,
-//   }) : super(key: key);
+            try {
+              // Get userId from LocalStorage
+              final userId = await LocalStorage.getString('userId') ?? '';
+              
+              if (userId.isEmpty) {
+                navigator.pop(); // Close loading dialog
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('User ID not found. Please login again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
 
-//   @override
-//   State<ProductImageCarousel> createState() => _ProductImageCarouselState();
-// }
+              // Get provider reference
+              final provider = Provider.of<PendingOrdersProvider>(context, listen: false);
+              bool success = true;
+              
+              // Reject all items in the order
+              for (final item in widget.order.items) {
+                final itemSuccess = await provider.rejectOrderItem(
+                  orderId: widget.order.id,
+                  itemId: item.id,
+                  userId: userId,
+                  rejectionReason: reasonController.text.trim(),
+                );
+                if (!itemSuccess) {
+                  success = false;
+                  break; // Stop on first failure
+                }
+              }
 
-// class _ProductImageCarouselState extends State<ProductImageCarousel> {
-//   int _currentIndex = 0;
-//   final PageController _pageController = PageController();
+              navigator.pop(); // Close loading dialog
 
-//   @override
-//   Widget build(BuildContext context) {
-//     if (widget.images.isEmpty) {
-//       return Container(
-//         height: 200,
-//         decoration: BoxDecoration(
-//           color: Colors.grey[800],
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         child: const Center(
-//           child: Icon(
-//             Icons.image_not_supported,
-//             color: Colors.grey,
-//             size: 48,
-//           ),
-//         ),
-//       );
-//     }
-
-//     return Column(
-//       children: [
-//         Container(
-//           height: 200,
-//           decoration: BoxDecoration(
-//             borderRadius: BorderRadius.circular(8),
-//             border: Border.all(
-//               color: const Color(0xFFD4AF37).withOpacity(0.3),
-//               width: 1,
-//             ),
-//           ),
-//           child: ClipRRect(
-//             borderRadius: BorderRadius.circular(8),
-//             child: PageView.builder(
-//               controller: _pageController,
-//               onPageChanged: (index) {
-//                 setState(() {
-//                   _currentIndex = index;
-//                 });
-//               },
-//               itemCount: widget.images.length,
-//               itemBuilder: (context, index) {
-//                 return Image.network(
-//                   widget.images[index].url,
-//                   fit: BoxFit.cover,
-//                   errorBuilder: (context, error, stackTrace) {
-//                     return Container(
-//                       color: Colors.grey[800],
-//                       child: const Center(
-//                         child: Icon(
-//                           Icons.image_not_supported,
-//                           color: Colors.grey,
-//                           size: 48,
-//                         ),
-//                       ),
-//                     );
-//                   },
-//                 );
-//               },
-//             ),
-//           ),
-//         ),
-//         if (widget.images.length > 1) ...[
-//           const SizedBox(height: 8),
-//           Row(
-//             mainAxisAlignment: MainAxisAlignment.center,
-//             children: widget.images.asMap().entries.map((entry) {
-//               return Container(
-//                 width: 8,
-//                 height: 8,
-//                 margin: const EdgeInsets.symmetric(horizontal: 4),
-//                 decoration: BoxDecoration(
-//                   shape: BoxShape.circle,
-//                   color: _currentIndex == entry.key 
-//                       ? const Color(0xFFD4AF37)
-//                       : Colors.grey[600],
-//                 ),
-//               );
-//             }).toList(),
-//           ),
-//         ],
-//       ],
-//     );
-//   }
-
-//   @override
-//   void dispose() {
-//     _pageController.dispose();
-//     super.dispose();
-//   }
-// }
+              if (success) {
+                navigator.pop(); // Go back to previous screen
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Order rejected successfully'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              } else {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to reject order. Please try again.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            } catch (e) {
+              navigator.pop(); // Close loading dialog
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text('Error: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: const Text(
+            'Reject',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+} 
