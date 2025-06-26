@@ -79,7 +79,7 @@ class PendingOrder {
 }
 
 class OrderItem {
-  final Product productId;
+  final Pendingproduct productId;
   final int quantity;
   final double fixedPrice;
   final double productWeight;
@@ -103,7 +103,7 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      productId: Product.fromJson(json['productId']),
+      productId: Pendingproduct.fromJson(json['productId']),
       quantity: json['quantity'] ?? 0,
       fixedPrice: (json['fixedPrice'] ?? 0).toDouble(),
       productWeight: (json['productWeight'] ?? 0).toDouble(),
@@ -116,7 +116,7 @@ class OrderItem {
   }
 }
 
-class Product {
+class Pendingproduct {
   final String id;
   final String title;
   final String description;
@@ -131,7 +131,7 @@ class Product {
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  Product({
+  Pendingproduct({
     required this.id,
     required this.title,
     required this.description,
@@ -147,8 +147,8 @@ class Product {
     required this.updatedAt,
   });
 
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
+  factory Pendingproduct.fromJson(Map<String, dynamic> json) {
+    return Pendingproduct(
       id: json['_id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',

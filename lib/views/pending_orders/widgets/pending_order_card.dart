@@ -54,7 +54,7 @@ class PendingOrderCard extends StatelessWidget {
                           Text(
                             DateFormatter.formatOrderDate(order.orderDate),
                             style: TextStyle(
-                              color: Colors.grey[400],
+                              color: UIColor.gold.withOpacity(0.8) ,
                               fontSize: 14,
                             ),
                           ),
@@ -106,10 +106,10 @@ class PendingOrderCard extends StatelessWidget {
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
-                                color: Colors.grey[800],
-                                child: const Icon(
+                                color: UIColor.gold.withOpacity(0.8),
+                                child: Icon(
                                   Icons.image_not_supported,
-                                  color: Colors.grey,
+                                  color: UIColor.gold,
                                   size: 24,
                                 ),
                               );
@@ -124,8 +124,8 @@ class PendingOrderCard extends StatelessWidget {
                         children: [
                           Text(
                             order.items.isNotEmpty ? order.items.first.productId.title : 'Unknown Product',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style:  TextStyle(
+                              color: UIColor.gold,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -136,7 +136,7 @@ class PendingOrderCard extends StatelessWidget {
                           Text(
                             '${order.items.length} item${order.items.length > 1 ? 's' : ''}',
                             style: TextStyle(
-                              color: Colors.grey[400],
+                              color: UIColor.gold.withOpacity(0.5) , 
                               fontSize: 14,
                             ),
                           ),
@@ -144,7 +144,7 @@ class PendingOrderCard extends StatelessWidget {
                           Text(
                             'Weight: ${order.totalWeight.toStringAsFixed(2)} g',
                             style: TextStyle(
-                              color: Colors.grey[400],
+                              color: UIColor.gold.withOpacity(0.5), 
                               fontSize: 14,
                             ),
                           ),
@@ -152,21 +152,14 @@ class PendingOrderCard extends StatelessWidget {
                       ),
                     ),
                     Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.end,  
+                      // mainAxisAlignment: MainAxisAlignment.start,   
                       children: [
-                        Text(
-                          CurrencyFormatter.formatAED(order.totalPrice),
-                          style: TextStyle(
-                            color: UIColor.gold, 
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
+                        
                         Text(
                           order.paymentMethod,
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: UIColor.gold.withOpacity(0.6) , 
                             fontSize: 12,
                           ),
                         ),
@@ -186,7 +179,7 @@ class PendingOrderCard extends StatelessWidget {
                     Text(
                       'Tap to view details',
                       style: TextStyle(
-                        color: Colors.grey[500],
+                        color: UIColor.gold.withOpacity(0.6), 
                         fontSize: 12,
                       ),
                     ),

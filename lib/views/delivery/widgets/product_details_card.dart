@@ -42,7 +42,7 @@ class ProductDetailsCard extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final productWeight = product.weight.toDouble();
+        final productWeight = product.weight.toDouble();  
         final productPurity = product.purity.toDouble();
         final makingCharge = product.makingCharge.toDouble();
         final productTitle = product.title;
@@ -117,7 +117,7 @@ class ProductDetailsCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${formatNumber(productWeight)} g',
+                    '${productWeight} g', 
                     style: TextStyle(
                       color: UIColor.gold,
                       fontFamily: 'Familiar',
@@ -161,8 +161,8 @@ class ProductDetailsCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${formatNumber(productWeight * quantity)} g',
-                    style: TextStyle(
+                    '${productWeight * quantity} g',
+                    style: TextStyle( 
                       color: UIColor.gold,
                       fontFamily: 'Familiar',
                       fontSize: 14.sp,

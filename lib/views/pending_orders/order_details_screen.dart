@@ -3,10 +3,17 @@ import 'package:provider/provider.dart';
 import 'package:swiss_gold/core/utils/colors.dart';
 
 import '../../core/models/pending_order_model.dart';
+import '../../core/models/product_model.dart';
 import '../../core/services/local_storage.dart';
+import '../../core/services/server_provider.dart';
+import '../../core/utils/calculations/bid_price_calculation.dart';
+import '../../core/utils/calculations/get_product.dart';
+import '../../core/utils/calculations/total_amount_calculation.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/date_formatter.dart';
+import '../../core/utils/money_format_heper.dart';
 import '../../core/view_models/pending_provider.dart';
+import '../../core/view_models/product_view_model.dart';
 
 class OrderDetailsScreen extends StatefulWidget {
   final PendingOrder order;
@@ -20,9 +27,16 @@ class OrderDetailsScreen extends StatefulWidget {
   State<OrderDetailsScreen> createState() => _OrderDetailsScreenState();
 }
 
+
+
 class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
+
+   
+
+    
+        
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -67,98 +81,111 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     );
   }
 
-  Widget _buildOrderSummaryCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: UIColor.gold,
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Order Summary',
-            style: TextStyle(
-              color: UIColor.gold,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: UIColor.gold,
-                width: 1,
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'User Approval Pending',
-                  style: TextStyle(
-                    color: UIColor.gold,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Live rate: ${CurrencyFormatter.getCurrentRate()}',
-                  style: TextStyle(
-                    color: Colors.grey[300],
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Total Amount: ${CurrencyFormatter.formatAED(widget.order.totalPrice)}',
-                  style: TextStyle(
-                    color: UIColor.gold,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  double calculateOrderTotal(ProductViewModel productViewModel, GoldRateProvider goldRateProvider) {
+  double totalAmount = 0.0;
+  
+  for (var item in widget.order.items) {
+    // Get the actual product
+    Product? product = getProductById(item.productId.id, productViewModel);
+    if (product != null) {
+      // Calculate pricing for this item
+      Map<String, double> pricing = calculateProductPricing(
+        product: product,
+        quantity: item.quantity,
+        goldRateProvider: goldRateProvider,
+        calculationContext: "OrderTotal - ${product.title}",
+      );
+      totalAmount += pricing['itemTotal']!;
+    }
   }
+  
+  return totalAmount;
+}
 
-  Widget _buildPaymentDetailsCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: UIColor.gold,
-          width: 1,
+ Widget _buildOrderSummaryCard() {
+  final productViewModel = Provider.of<ProductViewModel>(context);
+  final goldRateProvider = Provider.of<GoldRateProvider>(context);
+  
+  // Use the proper calculation instead of dummy data
+  double bidPrice = calculateBidPriceForDisplay(goldRateProvider, productViewModel);
+  
+  // Calculate total using our helper method
+  final totalAmount = calculateOrderTotal(productViewModel, goldRateProvider);
+  
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: UIColor.gold,
+        width: 1,
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(  
+          'User Approval Pending',
+          style: TextStyle(
+            color: UIColor.gold,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
         ),
+        const SizedBox(height: 8),
+        Text(
+          'Live rate: ${bidPrice > 0 ? formatNumber(bidPrice) : "Loading..."}', // Remove dummy data
+          style: TextStyle(
+            color: UIColor.gold.withOpacity(0.8), 
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Total Amount: AED ${formatNumber(totalAmount)}',
+          style: TextStyle(
+            color: UIColor.gold,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildPaymentDetailsCard() {
+  final productViewModel = Provider.of<ProductViewModel>(context);
+  final goldRateProvider = Provider.of<GoldRateProvider>(context);
+  
+  // Calculate the actual total amount using our helper method
+  final actualTotalAmount = calculateOrderTotal(productViewModel, goldRateProvider);
+  
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: UIColor.gold,
+        width: 1,
       ),
-      child: Column(
-        children: [
-          _buildDetailRow('Payment Method:', widget.order.paymentMethod),
-          _buildDetailRow('Delivery Date:', DateFormatter.formatDeliveryDate(widget.order.orderDate)),
-          _buildDetailRow('Total Items:', '${widget.order.items.length}'),
-          _buildDetailRow('Total Amount:', CurrencyFormatter.formatAED(widget.order.totalPrice)),
-        ],
-      ),
-    );
-  }
+    ),
+    child: Column(
+      children: [
+        _buildDetailRow('Payment Method:', widget.order.paymentMethod),
+        _buildDetailRow('Delivery Date:', DateFormatter.formatDeliveryDate(widget.order.orderDate)),
+        _buildDetailRow('Total Items:', '${widget.order.items.length}'),
+        _buildDetailRow('Live Calculated Total:', CurrencyFormatter.formatAED(actualTotalAmount)), // Use live calculation
+        _buildDetailRow('Original Order Total:', CurrencyFormatter.formatAED(widget.order.totalPrice)), // Keep original for comparison
+      ],
+    ),
+  );
+}
 
   Widget _buildProductDetailsCard() {
-    return Container(
+    return Container( 
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -187,40 +214,82 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   }
 
   Widget _buildProductItem(OrderItem item) {
+  final productViewModel = Provider.of<ProductViewModel>(context);
+  final goldRateProvider = Provider.of<GoldRateProvider>(context);
+  
+  // Get the actual product details
+  Product? product = getProductById(item.productId.id, productViewModel);
+  
+  if (product == null) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: UIColor.gold,
-          width: 1,
-        ),
+        border: Border.all(color: UIColor.gold, width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item.productId.title,
-            style: TextStyle(
-              color: UIColor.gold,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          _buildDetailRow('Quantity:', '${item.quantity}'),
-          _buildDetailRow('Weight per Unit:', '${item.productWeight.toStringAsFixed(2)} g'),
-          _buildDetailRow('Purity:', '${item.productId.purity}'),
-          _buildDetailRow('Total Weight:', '${item.productWeight.toStringAsFixed(2)} g'),
-          _buildDetailRow('Base Price:', CurrencyFormatter.formatAED(item.fixedPrice)),
-          _buildDetailRow('Item Total:', CurrencyFormatter.formatAED(item.fixedPrice + item.makingCharge)),
-        ],
+      child: Text(
+        'Product not found',
+        style: TextStyle(color: Colors.red, fontSize: 16),
       ),
     );
   }
+  
+  // Calculate proper pricing for this item
+  Map<String, double> pricing = calculateProductPricing(
+    product: product,
+    quantity: item.quantity,
+    goldRateProvider: goldRateProvider,
+    calculationContext: "OrderDetails - ${product.title}",
+  );
+  
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.black.withOpacity(0.3),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(
+        color: UIColor.gold,
+        width: 1,
+      ),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          product.title,
+          style: TextStyle(
+            color: UIColor.gold,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        _buildDetailRow('Quantity:', '${item.quantity}'),
+        _buildDetailRow('Weight per Unit:', '${product.weight.toStringAsFixed(2)} g'),
+        _buildDetailRow('Purity:', '${product.purity}'),
+        _buildDetailRow('Total Weight:', '${(product.weight * item.quantity).toStringAsFixed(2)} g'),
+        // _buildDetailRow('Gold Rate (AED/g):', formatNumber(pricing['bidPriceAEDPerGram']!)),
+        _buildDetailRow('Base Price:', CurrencyFormatter.formatAED(pricing['basePrice']!)),
+        // _buildDetailRow('Making Charge:', CurrencyFormatter.formatAED(product.makingCharge.toDouble())),
+        // _buildDetailRow('Unit Price:', CurrencyFormatter.formatAED(pricing['unitPrice']!)),
+        _buildDetailRow('Item Total:', CurrencyFormatter.formatAED(pricing['itemTotal']!)),
+      ],
+    ),
+  );
+}
+
+Map<String, dynamic> get orderData {
+  return {
+    "bookingData": widget.order.items.map((item) => {
+      "productId": item.productId.id,
+      "quantity": item.quantity,
+    }).toList(),
+  };
+}
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
@@ -231,7 +300,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.grey[300],
+              color: UIColor.gold.withOpacity(0.8), 
               fontSize: 14,
             ),
           ),
@@ -561,4 +630,13 @@ void _showRejectDialog(BuildContext context) {
     ),
   );
 }
+}
+
+extension on OrderItem {
+  operator [](String other) {}
 } 
+
+class MockWidget {
+  final Map<String, dynamic> orderData;
+  MockWidget({required this.orderData});
+}

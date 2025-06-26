@@ -12,7 +12,7 @@ static Future<PendingOrderResponse> getPendingApprovalOrders(String userId) asyn
       Uri.parse('$newBaseUrl/pending-approval-orders?userId=$userId'),
       headers: {
         'x-secret-key': secreteKey, 
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json', 
       },
     ).timeout(const Duration(seconds: 30)); // Add timeout
 
@@ -33,9 +33,9 @@ static Future<PendingOrderResponse> getPendingApprovalOrders(String userId) asyn
 
   static Future<bool> approveOrderItem({
     required String orderId,
-    required String itemId,
+    required String itemId,  
     required String userId,
-    required int quantity,
+    required int quantity, 
     required double fixedPrice,
     required double productWeight,
   }) async {
