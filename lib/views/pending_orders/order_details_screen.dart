@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer' as dev;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:swiss_gold/core/utils/colors.dart';
@@ -33,6 +36,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   Widget build(BuildContext context) {
 
+
+bool isGoldPayment = widget.order.paymentMethod.toLowerCase() == 'gold';
    
 
     
@@ -105,6 +110,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
  Widget _buildOrderSummaryCard() {
   final productViewModel = Provider.of<ProductViewModel>(context);
   final goldRateProvider = Provider.of<GoldRateProvider>(context);
+
+  bool isGoldPayment = widget.order.paymentMethod.toLowerCase() == 'gold';
   
   // Use the proper calculation instead of dummy data
   double bidPrice = calculateBidPriceForDisplay(goldRateProvider, productViewModel);
@@ -142,14 +149,19 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          'Total Amount: AED ${formatNumber(totalAmount)}',
-          style: TextStyle(
-            color: UIColor.gold,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+
+        if (isGoldPayment)
+         SizedBox.shrink() 
+        else
+           Text( 
+            'Total Amount: AED ${formatNumber(totalAmount)}',  
+            style: TextStyle(
+              color: UIColor.gold,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,  
+            ),
           ),
-        ),
+        
       ],
     ),
   );
@@ -161,6 +173,8 @@ Widget _buildPaymentDetailsCard() {
   
   // Calculate the actual total amount using our helper method
   final actualTotalAmount = calculateOrderTotal(productViewModel, goldRateProvider);
+
+    bool isGoldPayment = widget.order.paymentMethod.toLowerCase() == 'gold'; 
   
   return Container(
     width: double.infinity,
@@ -177,8 +191,12 @@ Widget _buildPaymentDetailsCard() {
         _buildDetailRow('Payment Method:', widget.order.paymentMethod),
         _buildDetailRow('Delivery Date:', DateFormatter.formatDeliveryDate(widget.order.orderDate)),
         _buildDetailRow('Total Items:', '${widget.order.items.length}'),
-        _buildDetailRow('Live Calculated Total:', CurrencyFormatter.formatAED(actualTotalAmount)), // Use live calculation
-        _buildDetailRow('Original Order Total:', CurrencyFormatter.formatAED(widget.order.totalPrice)), // Keep original for comparison
+       if (!isGoldPayment) ...[
+          _buildDetailRow('Live Calculated Total:', CurrencyFormatter.formatAED(actualTotalAmount)),
+          _buildDetailRow('Original Order Total:', CurrencyFormatter.formatAED(widget.order.totalPrice)),
+        ], 
+        
+      
       ],
     ),
   );
@@ -219,6 +237,8 @@ Widget _buildPaymentDetailsCard() {
   
   // Get the actual product details
   Product? product = getProductById(item.productId.id, productViewModel);
+
+   bool isGoldPayment = widget.order.paymentMethod.toLowerCase() == 'gold'; 
   
   if (product == null) {
     return Container(
@@ -269,14 +289,15 @@ Widget _buildPaymentDetailsCard() {
         const SizedBox(height: 12),
         
         _buildDetailRow('Quantity:', '${item.quantity}'),
-        _buildDetailRow('Weight per Unit:', '${product.weight.toStringAsFixed(2)} g'),
+        _buildDetailRow('Weight per Unit:', '${product.weight.toStringAsFixed(2)} g'), 
         _buildDetailRow('Purity:', '${product.purity}'),
         _buildDetailRow('Total Weight:', '${(product.weight * item.quantity).toStringAsFixed(2)} g'),
-        // _buildDetailRow('Gold Rate (AED/g):', formatNumber(pricing['bidPriceAEDPerGram']!)),
-        _buildDetailRow('Base Price:', CurrencyFormatter.formatAED(pricing['basePrice']!)),
-        // _buildDetailRow('Making Charge:', CurrencyFormatter.formatAED(product.makingCharge.toDouble())),
-        // _buildDetailRow('Unit Price:', CurrencyFormatter.formatAED(pricing['unitPrice']!)),
-        _buildDetailRow('Item Total:', CurrencyFormatter.formatAED(pricing['itemTotal']!)),
+
+
+        if (!isGoldPayment) ...[
+         _buildDetailRow('Base Price:', CurrencyFormatter.formatAED(pricing['basePrice']!)),
+         _buildDetailRow('Item Total:', CurrencyFormatter.formatAED(pricing['itemTotal']!)),
+        ],
       ],
     ),
   );
@@ -379,7 +400,7 @@ Map<String, dynamic> get orderData {
         style: TextStyle(color: Colors.white),
       ),
       content: const Text(
-        'Are you sure you want to approve this order?',
+        'Are you sure you want to approve this order? This will fix the current gold rates for all items.',
         style: TextStyle(color: Colors.grey),
       ),
       actions: [
@@ -425,49 +446,166 @@ Map<String, dynamic> get orderData {
                 return;
               }
 
-              // Get provider reference
-              final provider = Provider.of<PendingOrdersProvider>(context, listen: false);
-              bool success = true;
+              // Get provider references
+              final productViewModel = Provider.of<ProductViewModel>(context, listen: false);
+              final goldRateProvider = Provider.of<GoldRateProvider>(context, listen: false);
+              final pendingProvider = Provider.of<PendingOrdersProvider>(context, listen: false);
+
+              dev.log('🚀 === STARTING APPROVAL WITH FIX PRICE PROCESS ===');
+              dev.log('Order ID: ${widget.order.id}');
+              dev.log('Total Items: ${widget.order.items.length}');
+              dev.log('Gold Rate Connected: ${goldRateProvider.isConnected}');
+              dev.log('Current Gold Data: ${goldRateProvider.goldData}');
+
+              // STEP 1: Prepare fix price payload with current live rates
+              List<Map<String, dynamic>> fixPriceBookingData = [];
               
-              // Approve all items in the order
-              for (final item in widget.order.items) {
-                final itemSuccess = await provider.approveOrderItem(
-                  orderId: widget.order.id,
-                  itemId: item.id,
-                  userId: userId,
-                  quantity: item.quantity,
-                  fixedPrice: item.fixedPrice,
-                  productWeight: item.productWeight,
-                );
-                if (!itemSuccess) {
-                  success = false;
-                  break; // Stop on first failure
+              dev.log('🔧 === STEP 1: PREPARING FIX PRICE DATA ===');
+              
+              for (var orderItem in widget.order.items) {
+                String productId = orderItem.productId.id;
+                int quantity = orderItem.quantity;
+
+                dev.log('Processing item: ProductId=$productId, Quantity=$quantity');
+
+                Product? product = getProductById(productId, productViewModel);
+                if (product == null) {
+                  throw Exception("Product not found: $productId");
                 }
+
+                dev.log('Found Product: ${product.title}, Weight: ${product.weight}g, MakingCharge: ${product.makingCharge}');
+
+                // Calculate current live price using the same calculation as DeliveryDetailsView
+                Map<String, double> currentPricing = calculateProductPricing(
+                  product: product,
+                  quantity: 1, // Fix price per unit first
+                  goldRateProvider: goldRateProvider,
+                  calculationContext: "FIX_PRICE_APPROVAL for $productId",
+                );
+
+                double currentUnitPrice = currentPricing['unitPrice']!;
+                dev.log('Calculated Unit Price: $currentUnitPrice AED');
+
+                // Add each unit separately for fix price (same as DeliveryDetailsView)
+                for (int i = 0; i < quantity; i++) {
+                  final fixPriceItem = {
+                    "productId": productId,
+                    "fixedPrice": currentUnitPrice.round(), // Round to integer as per API
+                  };
+                  fixPriceBookingData.add(fixPriceItem);
+                  
+                  dev.log('Added fix price item ${i + 1}/$quantity: ProductId=$productId, FixedPrice=${currentUnitPrice.round()} AED');
+                }
+              }
+
+              final fixPricePayload = {
+                "bookingData": fixPriceBookingData,
+              };
+
+              dev.log('🔒 === FIX PRICE PAYLOAD SUMMARY ===');
+              dev.log('Total items to fix: ${fixPriceBookingData.length}');
+              dev.log('Complete payload: ${jsonEncode(fixPricePayload)}');
+
+              // STEP 2: Call fix price API
+              dev.log('🔒 === STEP 2: CALLING FIX PRICE API ===');
+              final fixPriceResult = await productViewModel.fixPrice(fixPricePayload);
+
+              dev.log('Fix Price API Response: ${fixPriceResult.toString()}');
+
+              // Check fix price success
+              if (fixPriceResult == null || 
+                  fixPriceResult.message == null || 
+                  !fixPriceResult.message!.toLowerCase().contains('fixed successfully')) {
+                dev.log('❌ FIX PRICE FAILED');
+                dev.log('Error Message: ${fixPriceResult?.message}');
+                
+                navigator.pop(); // Close loading dialog
+                
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(fixPriceResult?.message ?? 'Failed to fix price'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              dev.log('✅ PRICE FIXED SUCCESSFULLY');
+              dev.log('Fix Price Result: ${fixPriceResult.message}');
+
+              // STEP 3: Approve all items with fixed prices
+              dev.log('✅ === STEP 3: APPROVING ORDER ITEMS ===');
+              
+              bool approvalSuccess = true;
+              
+              // Create a map to track fixed prices by product
+              Map<String, double> fixedPricesByProduct = {};
+              int fixPriceIndex = 0;
+              
+              for (var orderItem in widget.order.items) {
+                String productId = orderItem.productId.id;
+                int quantity = orderItem.quantity;
+                
+                // Get the fixed price for this product (first occurrence)
+                if (!fixedPricesByProduct.containsKey(productId) && fixPriceIndex < fixPriceBookingData.length) {
+                  fixedPricesByProduct[productId] = fixPriceBookingData[fixPriceIndex]['fixedPrice'].toDouble();
+                }
+                
+                double fixedUnitPrice = fixedPricesByProduct[productId] ?? orderItem.fixedPrice;
+                
+                dev.log('Approving item: ProductId=$productId, Quantity=$quantity, FixedPrice=$fixedUnitPrice');
+                
+                final itemSuccess = await pendingProvider.approveOrderItem(
+                  orderId: widget.order.id,
+                  itemId: orderItem.id,
+                  userId: userId,
+                  quantity: quantity,
+                  fixedPrice: fixedUnitPrice, // Use the newly fixed price
+                  productWeight: orderItem.productWeight,
+                );
+                
+                if (!itemSuccess) {
+                  approvalSuccess = false;
+                  dev.log('❌ Failed to approve item: ${orderItem.id}');
+                  break;
+                } else {
+                  dev.log('✅ Successfully approved item: ${orderItem.id}');
+                }
+                
+                // Move to next fixed price entries
+                fixPriceIndex += quantity;
               }
 
               navigator.pop(); // Close loading dialog
 
-              if (success) {
+              if (approvalSuccess) {
+                dev.log('🎉 === ORDER APPROVAL COMPLETED SUCCESSFULLY ===');
                 navigator.pop(); // Go back to previous screen
                 scaffoldMessenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Order approved successfully'),
+                    content: Text('Order approved successfully with current gold rates'),
                     backgroundColor: Colors.green,
                   ),
                 );
               } else {
+                dev.log('❌ === ORDER APPROVAL FAILED ===');
                 scaffoldMessenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Failed to approve order. Please try again.'),
+                    content: Text('Failed to approve order after fixing prices. Please try again.'),
                     backgroundColor: Colors.red,
                   ),
                 );
               }
-            } catch (e) {
+              
+            } catch (e, stackTrace) {
+              dev.log('💥 === CRITICAL ERROR IN APPROVAL PROCESS ===');
+              dev.log('Error: ${e.toString()}');
+              dev.log('Stack Trace: ${stackTrace.toString()}');
+              
               navigator.pop(); // Close loading dialog
               scaffoldMessenger.showSnackBar(
                 SnackBar(
-                  content: Text('Error: ${e.toString()}'),
+                  content: Text('Approval failed: ${e.toString()}'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -599,8 +737,8 @@ void _showRejectDialog(BuildContext context) {
                 navigator.pop(); // Go back to previous screen
                 scaffoldMessenger.showSnackBar(
                   const SnackBar(
-                    content: Text('Order rejected successfully'),
-                    backgroundColor: Colors.red,
+                    content: Text('Order rejected successfully'), 
+                    backgroundColor: Colors.green, 
                   ),
                 );
               } else {
