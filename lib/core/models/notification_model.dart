@@ -22,8 +22,8 @@ class NotificationModel {
       id: json['_id'] ?? '',
       message: json['message'] ?? '',
       read: json['read'] ?? false,
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
       orderId: json['orderId'],
       itemId: json['itemId'],

@@ -19,16 +19,15 @@ import 'package:swiss_gold/views/splash/splash_view.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-
-void main() async{
-  
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FcmService.setupFlutterNotifications();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  FirebaseMessaging.onMessage.listen(firebaseMessagingForegroundHandler);
-
-  runApp( MyApp());
+  FirebaseMessaging.onBackgroundMessage(FcmService.firebaseMessagingBackgroundHandler);
+  FirebaseMessaging.onMessage.listen(FcmService.firebaseMessagingForegroundHandler);
+  await FcmService.requestPermission();
+  await FcmService.initialize();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -37,9 +36,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      designSize: Size(414, 896),
+      designSize: const Size(414, 896),
       child: MultiProvider(
-         providers: [
+        providers: [
           ChangeNotifierProvider(create: (context) => AuthViewModel()),
           ChangeNotifierProvider(create: (context) => ProductViewModel()),
           ChangeNotifierProvider(create: (context) => CartViewModel()),
@@ -49,18 +48,14 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => OrderHistoryViewModel()),
           ChangeNotifierProvider(create: (context) => TransactionViewModel()),
           ChangeNotifierProvider(create: (context) => PendingOrdersProvider()),
-          // ChangeNotifierProvider(create: (context) => LiveRateProvider()),
           ChangeNotifierProvider(create: (context) => GoldRateProvider()),
-
-
-          ],
+        ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Swiss Gold',
           theme: CustomTheme.theme,
-                    scaffoldMessengerKey: scaffoldMessengerKey,
-        
-          home: SplashView()
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: const SplashView(),
         ),
       ),
     );

@@ -1221,7 +1221,7 @@ PODS:
     - Firebase/Database (= 11.10.0)
     - firebase_core
     - Flutter
-  - firebase_messaging (15.2.1):
+  - firebase_messaging (15.2.5):
     - Firebase/Messaging (= 11.10.0)
     - firebase_core
     - Flutter
@@ -1509,7 +1509,7 @@ SPEC CHECKSUMS:
   Firebase: 1fe1c0a7d9aaea32efe01fbea5f0ebd8d70e53a2
   firebase_core: 432718558359a8c08762151b5f49bb0f093eb6e0
   firebase_database: 07eeb38709671838f92c4a5348173fc1b0241a18
-  firebase_messaging: 2d42f06803fb026cd60f9f3a6d4de19b442fc78e
+  firebase_messaging: 3b99522baf7480dfb4b7683d2b34e842d577c362
   FirebaseAppCheckInterop: 73b173e5ec45192e2d522ad43f526a82ad10b852
   FirebaseCore: 8344daef5e2661eb004b177488d6f9f0f24251b7
   FirebaseCoreExtension: 6f357679327f3614e995dc7cf3f2d600bdc774ac

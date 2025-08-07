@@ -38,11 +38,9 @@ class NotificationProvider with ChangeNotifier {
       final success = await _notificationService.markNotificationAsRead(notificationId);
       
       if (success) {
-        // Update local state
         final index = _notifications.indexWhere((n) => n.id == notificationId);
         if (index != -1) {
           _notifications[index] = _notifications[index].copyWith(read: true);
-          // After marking as read, decrement the unread count
           if (_unreadCount > 0) {
             _unreadCount--;
           }
@@ -60,21 +58,17 @@ class NotificationProvider with ChangeNotifier {
       final success = await _notificationService.deleteNotification(notificationId);
       
       if (success) {
-        // Check if the notification was unread before removing
         final notification = _notifications.firstWhere(
           (n) => n.id == notificationId,
           orElse: () => NotificationModel(
-            id: '', 
-            message: '', 
-            read: true, 
-            createdAt: DateTime.now()
+            id: '',
+            message: '',
+            read: true,
+            createdAt: DateTime.now(),
           ),
         );
         
-        // Remove from local state
         _notifications.removeWhere((n) => n.id == notificationId);
-        
-        // If the notification was unread, decrement the unread count
         if (!notification.read && _unreadCount > 0) {
           _unreadCount--;
         }
@@ -90,7 +84,6 @@ class NotificationProvider with ChangeNotifier {
     }
   }
 
-  // Method to get a specific notification by ID
   NotificationModel? getNotificationById(String id) {
     try {
       return _notifications.firstWhere((notification) => notification.id == id);
@@ -99,13 +92,19 @@ class NotificationProvider with ChangeNotifier {
     }
   }
   
-  // Method to filter notifications by type
   List<NotificationModel> getNotificationsByType(String type) {
     return _notifications.where((notification) => notification.type == type).toList();
   }
   
-  // Method to get notifications related to a specific order
   List<NotificationModel> getNotificationsByOrderId(String orderId) {
     return _notifications.where((notification) => notification.orderId == orderId).toList();
+  }
+
+  void addNotification(NotificationModel notification) {
+    _notifications.insert(0, notification);
+    if (!notification.read) {
+      _unreadCount++;
+    }
+    notifyListeners();
   }
 }

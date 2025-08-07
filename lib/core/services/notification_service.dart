@@ -9,7 +9,6 @@ class NotificationService {
   final client = http.Client();
 
   Future<String?> _getUserId() async {
-    // Get userId from local storage
     return await LocalStorage.getString('userId');
   }
 
@@ -25,7 +24,7 @@ class NotificationService {
         Uri.parse('$baseUrl/notifications/$userId'),
         headers: {
           'X-Secret-Key': secreteKey,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
       );
 
@@ -40,7 +39,7 @@ class NotificationService {
             'notifications': notificationsJson
                 .map((json) => NotificationModel.fromJson(json))
                 .toList(),
-            'unreadCount': unreadCount
+            'unreadCount': unreadCount,
           };
         } else {
           throw Exception(responseData['message'] ?? 'Failed to fetch notifications');
@@ -65,7 +64,7 @@ class NotificationService {
         Uri.parse('$baseUrl/notifications/read/$userId/$notificationId'),
         headers: {
           'X-Secret-Key': secreteKey,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
       );
 
@@ -92,7 +91,7 @@ class NotificationService {
         Uri.parse('$baseUrl/notifications/$userId/$notificationId'),
         headers: {
           'X-Secret-Key': secreteKey,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
       );
 
@@ -119,7 +118,7 @@ class NotificationService {
         Uri.parse('$baseUrl/notifications/$userId'),
         headers: {
           'X-Secret-Key': secreteKey,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
       );
 
