@@ -22,11 +22,11 @@ import 'package:firebase_core/firebase_core.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FcmService.requestPermission();
   await FcmService.setupFlutterNotifications();
+  await FcmService.initialize();
   FirebaseMessaging.onBackgroundMessage(FcmService.firebaseMessagingBackgroundHandler);
   FirebaseMessaging.onMessage.listen(FcmService.firebaseMessagingForegroundHandler);
-  await FcmService.requestPermission();
-  await FcmService.initialize();
   runApp(const MyApp());
 }
 

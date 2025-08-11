@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -63,11 +64,12 @@ class FcmService {
 
   static void showFlutterNotification(RemoteMessage message) {
     _logger.i('📬 Showing notification: ${message.messageId}');
-    try {
-      String jsonData = jsonEncode(message.data);
-      final title = message.notification?.title ?? message.data['title'];
-      final body = message.notification?.body ?? message.data['body'];
-      final type = message.data['type'];
+  _logger.d('Full message: ${message.toMap()}');
+  try {
+    String jsonData = jsonEncode(message.data);
+    final title = message.notification?.title ?? message.data['title'] ?? 'Default Title';
+    final body = message.notification?.body ?? message.data['body'] ?? 'Default Body';
+    final type = message.data['type'];
 
       flutterLocalNotificationsPlugin.show(
         message.hashCode,
@@ -106,11 +108,13 @@ class FcmService {
   }
 
   static Future<void> setupFlutterNotifications() async {
-    if (isFlutterLocalNotificationsInitialized) {
-      _logger.d('Notifications already initialized');
-      return;
-    }
+  if (isFlutterLocalNotificationsInitialized) {
+    _logger.d('Notifications already initialized');
+    return;
+  }
 
+  const maxRetries = 3;
+  for (int attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       channel = const AndroidNotificationChannel(
         'high_importance_channel',
@@ -152,29 +156,39 @@ class FcmService {
 
       isFlutterLocalNotificationsInitialized = true;
       _logger.i('✅ Flutter notifications setup complete');
+      return;
     } catch (e) {
-      _logger.e('Failed to setup notifications', error: e);
-      rethrow;
+      _logger.e('Failed to setup notifications (attempt $attempt/$maxRetries)', error: e);
+      if (attempt == maxRetries) {
+        _logger.e('Max retries reached, giving up');
+        rethrow;
+      }
+      await Future.delayed(Duration(seconds: attempt));
     }
   }
+}
 
-  static Future<void> requestPermission() async {
-    _logger.i('🔐 Requesting FCM permissions');
-    try {
-      await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: true,
-        provisional: false,
-        sound: true,
-      );
-      _logger.i('Permissions requested successfully');
-    } catch (e) {
-      _logger.e('Failed to request permissions', error: e);
+static Future<void> requestPermission() async {
+  _logger.i('🔐 Requesting FCM permissions');
+  try {
+    final settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: true,
+      provisional: true, // Enable provisional notifications for iOS
+      sound: true,
+    );
+    _logger.i('Permission status: ${settings.authorizationStatus}');
+    if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+        settings.authorizationStatus != AuthorizationStatus.provisional) {
+      _logger.w('Notification permissions not granted');
     }
+  } catch (e) {
+    _logger.e('Failed to request permissions', error: e);
   }
+}
 
   static void notificationTapBackground(NotificationResponse notificationResponse) {
     _logger.i('📱 Background notification tapped: ${notificationResponse.id}');
@@ -189,36 +203,59 @@ class FcmService {
         return;
       }
 
-      Map<String, dynamic> fcmData = jsonDecode(notificationResponse.payload!);
+      // Spawn an isolate for heavy processing
+      final receivePort = ReceivePort();
+      await Isolate.spawn(_processNotificationInIsolate, {
+        'payload': notificationResponse.payload,
+        'sendPort': receivePort.sendPort,
+        'actionId': notificationResponse.actionId,
+      });
+
+      // Listen for results from the isolate
+      receivePort.listen((message) {
+        _logger.i('Received result from isolate: $message');
+        receivePort.close();
+      });
+    } catch (e) {
+      _logger.e('Error handling notification response', error: e);
+    }
+  }
+
+  static void _processNotificationInIsolate(Map<String, dynamic> data) async {
+    final sendPort = data['sendPort'] as SendPort;
+    final payload = data['payload'] as String;
+    final actionId = data['actionId'] as String?;
+
+    try {
+      Map<String, dynamic> fcmData = jsonDecode(payload);
       final itemId = fcmData['itemId'];
       final orderId = fcmData['orderId'];
 
       if (itemId == null || orderId == null) {
-        _logger.w('Missing required data - itemId: $itemId, orderId: $orderId');
+        sendPort.send('Missing required data - itemId: $itemId, orderId: $orderId');
         return;
       }
 
-      if (notificationResponse.actionId == 'ACCEPT') {
-        _logger.i('👍 User ACCEPTED notification action');
+      if (actionId == 'ACCEPT') {
         await CartService.confirmQuantity({
           'action': true,
           'itemId': itemId,
           'orderId': orderId,
         });
-      } else if (notificationResponse.actionId == 'DECLINE') {
-        _logger.i('👎 User DECLINED notification action');
+        sendPort.send('Successfully processed ACCEPT action');
+      } else if (actionId == 'DECLINE') {
         await CartService.confirmQuantity({
           'action': false,
           'itemId': itemId,
           'orderId': orderId,
         });
+        sendPort.send('Successfully processed DECLINE action');
       } else {
-        _logger.d('Notification tapped without specific action');
-        // Navigate to notification screen or specific order
-        // Add navigation logic here if needed
+        sendPort.send('Notification tapped without specific action');
       }
     } catch (e) {
-      _logger.e('Error handling notification response', error: e);
+      sendPort.send('Error in isolate: $e');
     }
+  
   }
 }
