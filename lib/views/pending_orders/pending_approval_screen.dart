@@ -61,117 +61,119 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen> {
       //   ),
       //   centerTitle: true,
       // ),
-      body: Consumer<PendingOrdersProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFD4AF37),
-              ),
-            );
-          }
-
-          if (provider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.red,
-                    size: 64,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading orders',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+      body: SafeArea( 
+        child: Consumer<PendingOrdersProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFD4AF37),
+                ),
+              );
+            }
+        
+            if (provider.error != null) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 64,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    provider.error!,
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () async {
-                      provider.clearError();
-                      await _refreshOrders();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      foregroundColor: Colors.black,
-                    ),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (provider.pendingOrders.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.pending_actions,
-                    color: Colors.grey[600],
-                    size: 64,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No Pending Approvals',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'All your orders have been processed',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: _refreshOrders,
-            color: const Color(0xFFD4AF37),
-            backgroundColor: Colors.grey[900],
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: provider.pendingOrders.length,
-              itemBuilder: (context, index) {
-                final order = provider.pendingOrders[index];
-                return PendingOrderCard(
-                  order: order,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OrderDetailsScreen(order: order),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error loading orders',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                       ),
-                    );
-                  },
-                );
-              },
-            ),
-          );
-        },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      provider.error!,
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () async {
+                        provider.clearError();
+                        await _refreshOrders();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+        
+            if (provider.pendingOrders.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.pending_actions,
+                      color: Colors.grey[600],
+                      size: 64,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No Pending Approvals',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'All your orders have been processed',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+        
+            return RefreshIndicator(
+              onRefresh: _refreshOrders,
+              color: const Color(0xFFD4AF37),
+              backgroundColor: Colors.grey[900],
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: provider.pendingOrders.length,
+                itemBuilder: (context, index) {
+                  final order = provider.pendingOrders[index];
+                  return PendingOrderCard(
+                    order: order,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OrderDetailsScreen(order: order),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -3,10 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:swiss_gold/views/pending_orders/pending_approval_screen.dart';
 
 import '../../../core/models/notification_model.dart';
+import '../../../core/models/pending_order_model.dart';
 import '../../../core/services/cart_service.dart';
 import '../../../core/services/notification_provider.dart';
+import '../../../core/view_models/pending_provider.dart';
+import '../../pending_orders/order_details_screen.dart';
 
 class NotificationDetailScreen extends StatelessWidget {
   final String notificationId;
@@ -146,109 +150,146 @@ class NotificationDetailScreen extends StatelessWidget {
                 
                 const SizedBox(height: 24),
                 
-                // Notification content
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          notification.message,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            height: 1.5,
-                            color: Colors.white,
-                          ),
+                
+                
+                // Notification content (make it tappable if Approval-Pending)
+                GestureDetector(
+                  onTap: notification.type == 'user_approvel_pending' 
+                      ? () async {
+                          // Fetch the PendingOrder using orderId
+                          final pendingProvider = Provider.of<PendingOrdersProvider>(context, listen: false);
+                          final PendingOrder? order = pendingProvider.getOrderById(orderId!);
+
+                          // if (order != null) {
+                          Navigator.pushAndRemoveUntil(context,MaterialPageRoute(
+                                builder: (_) =>PendingApprovalScreen() , 
+                                
+                              ), (route) => true,); 
+                            // Navigator.pushAndRemoveUntil(
+
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (_) =>PendingApprovalScreen() , 
+                            //   ),
+                            // );
+                          // } else {
+                          //   ScaffoldMessenger.of(context).showSnackBar(
+                          //     SnackBar(
+                          //       content: Text('Order not found'),
+                          //       backgroundColor: Colors.red,
+                          //     ),
+                          //   );
+                          // }
+                        }
+                      : null,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
-                        if (orderId != null || notification.orderId != null) ...[
-                          const SizedBox(height: 24),
-                          const Divider(
-                            color: Colors.white24,
-                            height: 1,
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              const Text(
-                                'Order ID:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.shade700.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  orderId ?? notification.orderId!,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.amber.shade300,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        
-                        // Display item ID if available
-                        if (notification.itemId != null) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              const Text(
-                                'Item ID:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade700.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  notification.itemId!,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.blue.shade300,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            notification.message,
+                            style: TextStyle(
+                              fontSize: 18,
+                              height: 1.5,
+                              color: notification.type == 'Approval-Pending'
+                                  ? Colors.amber.shade300
+                                  : Colors.white,
+                              decoration: notification.type == 'Approval-Pending'
+                                  ? TextDecoration.underline
+                                  : TextDecoration.none,
+                            ),
+                          ),
+                          // if (orderId != null || notification.orderId != null) ...[
+                          //   const SizedBox(height: 24),
+                          //   const Divider(
+                          //     color: Colors.white24,
+                          //     height: 1,
+                          //   ),
+                          //   const SizedBox(height: 16),
+                          //   Row(
+                          //     children: [
+                          //       const Text(
+                          //         'Order ID:',
+                          //         style: TextStyle(
+                          //           fontWeight: FontWeight.bold,
+                          //           fontSize: 16,
+                          //           color: Colors.white70,
+                          //         ),
+                          //       ),
+                          //       const SizedBox(width: 8),
+                          //       Container(
+                          //         padding: const EdgeInsets.symmetric(
+                          //           horizontal: 10,
+                          //           vertical: 4,
+                          //         ),
+                          //         decoration: BoxDecoration(
+                          //           color: Colors.amber.shade700.withOpacity(0.1),
+                          //           borderRadius: BorderRadius.circular(8),
+                          //         ),
+                          //         child: Text(
+                          //           orderId ?? notification.orderId!,
+                          //           style: TextStyle(
+                          //             fontSize: 16,
+                          //             color: Colors.amber.shade300,
+                          //             fontWeight: FontWeight.w500,
+                          //           ),
+                          //         ),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ],
+                          
+                          // Display item ID if available
+                          // if (notification.itemId != null) ...[
+                          //   const SizedBox(height: 12),
+                          //   Row(
+                          //     children: [
+                          //       const Text(
+                          //         'Item ID:',
+                          //         style: TextStyle(
+                          //           fontWeight: FontWeight.bold,
+                          //           fontSize: 16,
+                          //           color: Colors.white70,
+                          //         ),
+                          //       ),
+                          //       const SizedBox(width: 8),
+                          //       Container(
+                          //         padding: const EdgeInsets.symmetric(
+                          //           horizontal: 10,
+                          //           vertical: 4,
+                          //         ),
+                          //         decoration: BoxDecoration(
+                          //           color: Colors.blue.shade700.withOpacity(0.1),
+                          //           borderRadius: BorderRadius.circular(8),
+                          //         ),
+                          //         child: Text(
+                          //           notification.itemId!,
+                          //           style: TextStyle(
+                          //             fontSize: 16,
+                          //             color: Colors.blue.shade300,
+                          //             fontWeight: FontWeight.w500,
+                          //           ),
+                          //         ),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

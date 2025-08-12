@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/pending_order_model.dart';
-import '../services/pending_product_service.dart'; // Changed from pending_product_service.dart
+import '../services/pending_product_service.dart';
 
 class PendingOrdersProvider with ChangeNotifier {
   List<PendingOrder> _pendingOrders = [];
@@ -10,6 +10,20 @@ class PendingOrdersProvider with ChangeNotifier {
   List<PendingOrder> get pendingOrders => _pendingOrders;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  // Add this method to retrieve a PendingOrder by orderId
+  PendingOrder? getOrderById(String orderId) {
+    try {
+      return _pendingOrders.firstWhere(
+        (order) => order.id == orderId,
+        orElse: () => throw Exception('Order not found'), // Throw exception if no order is found
+      );
+    } catch (e) {
+      _error = 'Error finding order: $e';
+      notifyListeners();
+      return null;
+    }
+  }
 
   Future<void> fetchPendingOrders(String userId) async {
     _isLoading = true;
@@ -48,7 +62,6 @@ class PendingOrdersProvider with ChangeNotifier {
       );
       
       if (success) {
-        // Refresh the pending orders list instead of manually removing
         await fetchPendingOrders(userId);
       }
       
@@ -75,7 +88,6 @@ class PendingOrdersProvider with ChangeNotifier {
       );
       
       if (success) {
-        // Refresh the pending orders list instead of manually removing
         await fetchPendingOrders(userId);
       }
       
