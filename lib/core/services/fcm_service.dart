@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:swiss_gold/core/services/cart_service.dart';
+import 'package:swiss_gold/core/utils/navigate.dart';
+import 'package:swiss_gold/views/notification/notification_view.dart';
 import 'package:logger/logger.dart';
 
 class FcmService {
@@ -13,6 +15,12 @@ class FcmService {
   static late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
   static bool isFlutterLocalNotificationsInitialized = false;
   static final Logger _logger = Logger();
+  static BuildContext? _currentContext;
+
+  // Add method to set current context
+  static void setCurrentContext(BuildContext context) {
+    _currentContext = context;
+  }
 
   static Future<void> initialize() async {
     _logger.i('Initializing FCM Service');
@@ -64,12 +72,12 @@ class FcmService {
 
   static void showFlutterNotification(RemoteMessage message) {
     _logger.i('📬 Showing notification: ${message.messageId}');
-  _logger.d('Full message: ${message.toMap()}');
-  try {
-    String jsonData = jsonEncode(message.data);
-    final title = message.notification?.title ?? message.data['title'] ?? 'Default Title';
-    final body = message.notification?.body ?? message.data['body'] ?? 'Default Body';
-    final type = message.data['type'];
+    _logger.d('Full message: ${message.toMap()}');
+    try {
+      String jsonData = jsonEncode(message.data);
+      final title = message.notification?.title ?? message.data['title'] ?? 'Default Title';
+      final body = message.notification?.body ?? message.data['body'] ?? 'Default Body';
+      final type = message.data['type'];
 
       flutterLocalNotificationsPlugin.show(
         message.hashCode,
@@ -108,87 +116,87 @@ class FcmService {
   }
 
   static Future<void> setupFlutterNotifications() async {
-  if (isFlutterLocalNotificationsInitialized) {
-    _logger.d('Notifications already initialized');
-    return;
+    if (isFlutterLocalNotificationsInitialized) {
+      _logger.d('Notifications already initialized');
+      return;
+    }
+
+    const maxRetries = 3;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        channel = const AndroidNotificationChannel(
+          'high_importance_channel',
+          'High Importance Notifications',
+          description: 'This channel is used for important notifications.',
+          importance: Importance.max,
+          playSound: true,
+          enableVibration: true,
+          showBadge: true,
+          sound: RawResourceAndroidNotificationSound('notification'),
+        );
+
+        flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+        await flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+            ?.createNotificationChannel(channel);
+
+        await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        const initializationSettings = InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+          ),
+        );
+
+        await flutterLocalNotificationsPlugin.initialize(
+          initializationSettings,
+          onDidReceiveNotificationResponse: _handleNotificationResponse,
+          onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+        );
+
+        isFlutterLocalNotificationsInitialized = true;
+        _logger.i('✅ Flutter notifications setup complete');
+        return;
+      } catch (e) {
+        _logger.e('Failed to setup notifications (attempt $attempt/$maxRetries)', error: e);
+        if (attempt == maxRetries) {
+          _logger.e('Max retries reached, giving up');
+          rethrow;
+        }
+        await Future.delayed(Duration(seconds: attempt));
+      }
+    }
   }
 
-  const maxRetries = 3;
-  for (int attempt = 1; attempt <= maxRetries; attempt++) {
+  static Future<void> requestPermission() async {
+    _logger.i('🔐 Requesting FCM permissions');
     try {
-      channel = const AndroidNotificationChannel(
-        'high_importance_channel',
-        'High Importance Notifications',
-        description: 'This channel is used for important notifications.',
-        importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
-        showBadge: true,
-        sound: RawResourceAndroidNotificationSound('notification'),
-      );
-
-      flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(channel);
-
-      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
+        announcement: false,
         badge: true,
+        carPlay: false,
+        criticalAlert: true,
+        provisional: true, // Enable provisional notifications for iOS
         sound: true,
       );
-
-      const initializationSettings = InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
-        ),
-      );
-
-      await flutterLocalNotificationsPlugin.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: _handleNotificationResponse,
-        onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-      );
-
-      isFlutterLocalNotificationsInitialized = true;
-      _logger.i('✅ Flutter notifications setup complete');
-      return;
-    } catch (e) {
-      _logger.e('Failed to setup notifications (attempt $attempt/$maxRetries)', error: e);
-      if (attempt == maxRetries) {
-        _logger.e('Max retries reached, giving up');
-        rethrow;
+      _logger.i('Permission status: ${settings.authorizationStatus}');
+      if (settings.authorizationStatus != AuthorizationStatus.authorized &&
+          settings.authorizationStatus != AuthorizationStatus.provisional) {
+        _logger.w('Notification permissions not granted');
       }
-      await Future.delayed(Duration(seconds: attempt));
+    } catch (e) {
+      _logger.e('Failed to request permissions', error: e);
     }
   }
-}
-
-static Future<void> requestPermission() async {
-  _logger.i('🔐 Requesting FCM permissions');
-  try {
-    final settings = await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: true,
-      provisional: true, // Enable provisional notifications for iOS
-      sound: true,
-    );
-    _logger.i('Permission status: ${settings.authorizationStatus}');
-    if (settings.authorizationStatus != AuthorizationStatus.authorized &&
-        settings.authorizationStatus != AuthorizationStatus.provisional) {
-      _logger.w('Notification permissions not granted');
-    }
-  } catch (e) {
-    _logger.e('Failed to request permissions', error: e);
-  }
-}
 
   static void notificationTapBackground(NotificationResponse notificationResponse) {
     _logger.i('📱 Background notification tapped: ${notificationResponse.id}');
@@ -201,6 +209,14 @@ static Future<void> requestPermission() async {
       if (notificationResponse.payload == null) {
         _logger.w('Notification payload is null');
         return;
+      }
+
+      // Navigate to NotificationView when notification is tapped
+      if (_currentContext != null) {
+        navigateWithAnimationTo(_currentContext!, const NotificationView(), 0, 1);
+        _logger.i('Navigated to NotificationView');
+      } else {
+        _logger.w('Current context is null, cannot navigate');
       }
 
       // Spawn an isolate for heavy processing
@@ -256,6 +272,5 @@ static Future<void> requestPermission() async {
     } catch (e) {
       sendPort.send('Error in isolate: $e');
     }
-  
   }
 }

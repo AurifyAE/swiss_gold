@@ -16,6 +16,7 @@ import 'package:swiss_gold/views/more/more_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
+import '../../core/services/fcm_service.dart';
 import '../../core/view_models/cart_view_model.dart';
 
 class BottomNav extends StatefulWidget {
@@ -105,11 +106,16 @@ class _BottomNavState extends State<BottomNav> {
           });
         }
       });
+      // Set the current context for FCM navigation
+      FcmService.setCurrentContext(context);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Update context whenever build is called
+    FcmService.setCurrentContext(context);
+    
     return Consumer<CartViewModel>(builder: (context, cartViewModel, child) {
       // Get the current guest status from CartViewModel
       final bool isGuest = cartViewModel.isGuest ?? false;
