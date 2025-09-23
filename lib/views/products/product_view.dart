@@ -205,7 +205,7 @@ class _ProductViewState extends State<ProductView>
         titleColor: UIColor.white,
         width: 130.w,
         context: context,
-        title: 'Booking failed'
+        title: 'Booking success' 
       );
     }
   }
