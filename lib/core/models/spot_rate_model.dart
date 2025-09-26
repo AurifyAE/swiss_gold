@@ -304,4 +304,4 @@ class SpotRateModel {
       'goldLowMargin': goldLowMargin,
     };
   }
-}
+} 
