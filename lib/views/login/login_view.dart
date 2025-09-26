@@ -1,7 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -13,8 +10,9 @@ import 'package:swiss_gold/core/utils/widgets/custom_snackbar.dart';
 import 'package:swiss_gold/core/utils/widgets/custom_txt_field.dart';
 import 'package:swiss_gold/core/view_models/auth_view_model.dart';
 import 'package:swiss_gold/views/bottom_nav/bottom_nav.dart';
-
 import '../../core/services/firebase_service.dart';
+
+enum AuthMode { login, register }
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -24,166 +22,518 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
+  AuthMode _currentMode = AuthMode.login;
   bool isObscure = true;
+  bool isConfirmObscure = true;
+
+  // Controllers
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController passController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
+  final TextEditingController confirmPassController = TextEditingController();
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 34.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hello Again!',
-                style: TextStyle(
-                  color: UIColor.gold,
-                  fontSize: 28.sp,
-                  fontFamily: 'Familiar',
-                ),
-              ),
-              Text(
-                'Welcome back , You have been missed.',
-                style: TextStyle(
-                  color: UIColor.gold,
-                  fontSize: 14.sp,
-                  fontFamily: 'Familiar',
-                ),
-              ),
-              SizedBox(
-                height: 48.h,
-              ),
-              CustomTxtField(
-                label: 'Mobile',
-                controller: mobileController,
-              ),
-              SizedBox(height: 15.h),
-              CustomTxtField(
-                controller: passController,
-                label: 'Password',
-                isObscure: isObscure,
-                suffixIcon: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        isObscure = !isObscure;
-                      });
-                    },
-                    icon: Icon(
-                      isObscure ? Icons.visibility_off : Icons.visibility,
-                      color: UIColor.gold,
-                    )),
-              ),
-              SizedBox(height: 30.h),
-              GestureDetector(
-                onTap: () async {
-                  if (mobileController.text.isEmpty ||
-                      passController.text.isEmpty) {
-                    customSnackBar(
-                        context: context, title: 'Email or password is empty');
-                  } else {
-                    final token = await FcmService.getToken();
-                    log(token.toString());
+  void initState() {
+    super.initState();
+    log('LoginView: Initializing, current mode: $_currentMode');
+    if (_currentMode == AuthMode.register) {
+      log('LoginView: Fetching categories for registration');
+      Provider.of<AuthViewModel>(context, listen: false).fetchCategories();
+    }
+  }
 
-                    log('📲 FCM Token: $token');
+  @override
+  void dispose() {
+    log('LoginView: Disposing controllers');
+    mobileController.dispose();
+    passController.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    addressController.dispose();
+    confirmPassController.dispose();
+    super.dispose();
+  }
 
+  void _switchMode(AuthMode mode) {
+    log('LoginView: Switching mode to $mode');
+    setState(() => _currentMode = mode);
+    if (mode == AuthMode.register) {
+      log('LoginView: Fetching categories for registration form');
+      Provider.of<AuthViewModel>(context, listen: false).fetchCategories();
+    }
+  }
 
-                    // Inside your onTap method in LoginView.dart
-Provider.of<AuthViewModel>(context, listen: false)
-    .login({
+  bool _validateRegistration() {
+    log('LoginView: Validating registration form');
+    if (nameController.text.isEmpty ||
+        mobileController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        addressController.text.isEmpty ||
+        passController.text.isEmpty ||
+        confirmPassController.text.isEmpty) {
+      log('LoginView: Validation failed - empty fields detected');
+      customSnackBar(context: context, title: 'Please fill all required fields');
+      return false;
+    }
+
+    if (passController.text != confirmPassController.text) {
+      log('LoginView: Validation failed - passwords do not match');
+      customSnackBar(context: context, title: 'Passwords do not match');
+      return false;
+    }
+
+    if (passController.text.length < 6) {
+      log('LoginView: Validation failed - password too short');
+      customSnackBar(context: context, title: 'Password must be at least 6 characters');
+      return false;
+    }
+
+    if (Provider.of<AuthViewModel>(context, listen: false).selectedCategoryId == null) {
+      log('LoginView: Validation failed - no category selected');
+      customSnackBar(context: context, title: 'Please select a category');
+      return false;
+    }
+
+    log('LoginView: Registration form validation passed');
+    return true;
+  }
+
+  Widget _buildHeader() {
+    String title = _currentMode == AuthMode.login ? 'Hello Again!' : 'Create Account';
+    String subtitle = _currentMode == AuthMode.login 
+        ? 'Welcome back, You have been missed.'
+        : 'Join us and start your journey today.';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(
+            title,
+            key: ValueKey(title),
+            style: TextStyle(
+              color: UIColor.gold,
+              fontSize: 28.sp,
+              fontFamily: 'Familiar',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(
+            subtitle,
+            key: ValueKey(subtitle),
+            style: TextStyle(
+              color: UIColor.gold.withOpacity(0.8),
+              fontSize: 14.sp,
+              fontFamily: 'Familiar',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySelector(BuildContext context) {
+    final authViewModel = Provider.of<AuthViewModel>(context);
+    log('LoginView: Building category selector with ${authViewModel.categories.length} categories');
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        labelText: 'Category',
+        labelStyle: TextStyle(
+          color: UIColor.gold,
+          fontSize: 16.sp,
+          fontFamily: 'Familiar',
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: UIColor.gold.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: UIColor.gold),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+      ),
+      value: authViewModel.selectedCategoryId,
+      items: authViewModel.categories.map((category) {
+        return DropdownMenuItem<String>(
+          value: category['_id'],
+          child: Text(
+            category['name'],
+            style: TextStyle(
+              color: UIColor.gold,
+              fontSize: 14.sp,
+              fontFamily: 'Familiar',
+            ),
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        log('LoginView: Category selected: $value');
+        authViewModel.setSelectedCategory(value);
+      },
+      dropdownColor: Colors.black,
+      icon: Icon(Icons.arrow_drop_down, color: UIColor.gold),
+    );
+  }
+
+  Widget _buildLoginForm() {
+    return Column(
+      children: [
+        CustomTxtField(
+          label: 'Mobile',
+          controller: mobileController,
+        ),
+        SizedBox(height: 15.h),
+        CustomTxtField(
+          controller: passController,
+          label: 'Password',
+          isObscure: isObscure,
+          suffixIcon: IconButton(
+            onPressed: () {
+              log('LoginView: Toggling password visibility');
+              setState(() => isObscure = !isObscure);
+            },
+            icon: Icon(
+              isObscure ? Icons.visibility_off : Icons.visibility,
+              color: UIColor.gold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRegistrationForm(BuildContext context) {
+    return Column(
+      children: [
+        CustomTxtField(label: 'Full Name', controller: nameController),
+        SizedBox(height: 15.h),
+        CustomTxtField(label: 'Mobile Number', controller: mobileController),
+        SizedBox(height: 15.h),
+        CustomTxtField(label: 'Email Address', controller: emailController),
+        SizedBox(height: 15.h),
+        CustomTxtField(label: 'Address', controller: addressController),
+        SizedBox(height: 15.h),
+        _buildCategorySelector(context),
+        SizedBox(height: 15.h),
+        CustomTxtField(
+          controller: passController,
+          label: 'Password',
+          isObscure: isObscure,
+          suffixIcon: IconButton(
+            onPressed: () {
+              log('LoginView: Toggling password visibility');
+              setState(() => isObscure = !isObscure);
+            },
+            icon: Icon(
+              isObscure ? Icons.visibility_off : Icons.visibility,
+              color: UIColor.gold,
+            ),
+          ),
+        ),
+        SizedBox(height: 15.h),
+        CustomTxtField(
+          controller: confirmPassController,
+          label: 'Confirm Password',
+          isObscure: isConfirmObscure,
+          suffixIcon: IconButton(
+            onPressed: () {
+              log('LoginView: Toggling confirm password visibility');
+              setState(() => isConfirmObscure = !isConfirmObscure);
+            },
+            icon: Icon(
+              isConfirmObscure ? Icons.visibility_off : Icons.visibility,
+              color: UIColor.gold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleLogin() async {
+    log('LoginView: Handling login');
+    if (mobileController.text.isEmpty || passController.text.isEmpty) {
+      log('LoginView: Login validation failed - empty mobile or password');
+      customSnackBar(context: context, title: 'Mobile or password is empty');
+      return;
+    }
+
+    final token = await FcmService.getToken();
+    log('LoginView: FCM Token retrieved: $token');
+
+    final payload = {
       "contact": int.parse(mobileController.text),
       "password": passController.text,
       'token': token,
-    })
-    .then((response) async {
-      if (response == null) {
-        customSnackBar(
-          context: context, 
-          title: 'Login failed. Please try again.'
-        );
-        return;
-      }
-      
-      if (response.success) {
-        LocalStorage.setBool('isGuest', false);
-        FcmService.requestPermission();
-        
-        final userId = response.userId;
-        if (userId.isNotEmpty) {
-          // Save userId to local storage for future use
-          await LocalStorage.setString({'userId': userId});
-          
-          // Add FCM token to Firebase Realtime Database
-          if (token != null) {
-            try {
-              await FirebaseService().saveUserFcmToken(userId, token);
-              log('FCM token saved to Firebase for user: $userId');
-            } catch (e) {
-              log('Failed to save FCM token: $e');
-              // Optionally show a snackbar but don't block login
-            }
-          }
-        }
-        
-        customSnackBar(
-          context: context,
-          title: response.message,
-          bgColor: UIColor.gold,
-          width: 130.w
-        );
+    };
+    log('LoginView: Login payload: $payload');
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => BottomNav()),
-          (route) => false
-        );
-      } else {
-        customSnackBar(context: context, title: response.message);
+    final response = await Provider.of<AuthViewModel>(context, listen: false).login(payload);
+    log('LoginView: Login response received: success=${response?.success}, message=${response?.message}, userId=${response?.userId}');
+
+    if (response == null) {
+      log('LoginView: Login response is null');
+      customSnackBar(context: context, title: 'Login failed. Please try again.');
+      return;
+    }
+
+    if (response.success) {
+      log('LoginView: Login successful, userId: ${response.userId}');
+      await LocalStorage.setBool('isGuest', false);
+      log('LoginView: Set isGuest to false');
+
+      FcmService.requestPermission();
+      log('LoginView: Requested FCM permission');
+
+      final userId = response.userId;
+      if (userId.isNotEmpty && token != null) {
+        try {
+          log('LoginView: Saving FCM token for user: $userId');
+          await FirebaseService().saveUserFcmToken(userId, token);
+          log('LoginView: FCM token saved to Firebase');
+        } catch (e, stackTrace) {
+          log('LoginView: Failed to save FCM token: ${e.toString()}', stackTrace: stackTrace);
+        }
       }
-    });
-                  }
+
+      customSnackBar(
+        context: context,
+        title: response.message,
+        bgColor: UIColor.gold,
+        width: 130.w,
+      );
+
+      log('LoginView: Navigating to BottomNav');
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => BottomNav()),
+        (route) => false,
+      );
+    } else {
+      log('LoginView: Login failed with message: ${response.message}');
+      customSnackBar(context: context, title: response.message);
+    }
+  }
+
+  Future<void> _handleRegistration() async {
+    log('LoginView: Handling registration');
+    if (!_validateRegistration()) {
+      log('LoginView: Registration validation failed');
+      return;
+    }
+
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    final token = await FcmService.getToken();
+    log('LoginView: FCM Token retrieved for registration: $token');
+
+    final payload = {
+      "name": nameController.text,
+      "email": emailController.text,
+      "categoryId": authViewModel.selectedCategoryId,
+      "address": addressController.text,
+      "contact": mobileController.text,
+      "password": passController.text,
+      "token": token,
+    };
+    log('LoginView: Registration payload: $payload');
+
+    final response = await authViewModel.register(payload);
+    log('LoginView: Registration response received: success=${response?.success}, message=${response?.message}, userId=${response?.userId}');
+
+    if (response == null) {
+      log('LoginView: Registration response is null');
+      customSnackBar(context: context, title: 'Registration failed. Please try again.');
+      return;
+    }
+
+    if (response.success) {
+      log('LoginView: Registration successful, userId: ${response.userId}');
+      await LocalStorage.setBool('isGuest', false);
+      log('LoginView: Set isGuest to false');
+
+      FcmService.requestPermission();
+      log('LoginView: Requested FCM permission');
+
+      final userId = response.userId;
+      if (userId.isNotEmpty && token != null) {
+        try {
+          log('LoginView: Saving FCM token for user: $userId');
+          await FirebaseService().saveUserFcmToken(userId, token);
+          log('LoginView: FCM token saved to Firebase');
+        } catch (e, stackTrace) {
+          log('LoginView: Failed to save FCM token: ${e.toString()}', stackTrace: stackTrace);
+        }
+      }
+
+      customSnackBar(
+        context: context,
+        title: response.message,
+        bgColor: UIColor.gold,
+        width: 130.w,
+      );
+
+      // Clear form fields
+      log('LoginView: Clearing registration form fields');
+      nameController.clear();
+      emailController.clear();
+      addressController.clear();
+      mobileController.clear();
+      passController.clear();
+      confirmPassController.clear();
+
+      // Switch to login mode
+      log('LoginView: Switching to login mode after successful registration');
+      _switchMode(AuthMode.login);
+    } else {
+      log('LoginView: Registration failed with message: ${response.message}');
+      customSnackBar(context: context, title: response.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    log('LoginView: Building UI, current mode: $_currentMode');
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 24.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              SizedBox(height: 32.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _switchMode(AuthMode.login),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: _currentMode == AuthMode.login
+                                  ? UIColor.gold
+                                  : Colors.transparent,
+                              width: 2.w,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Login',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _currentMode == AuthMode.login
+                                ? UIColor.gold
+                                : UIColor.gold.withOpacity(0.6),
+                            fontSize: 16.sp,
+                            fontFamily: 'Familiar',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _switchMode(AuthMode.register),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: _currentMode == AuthMode.register
+                                  ? UIColor.gold
+                                  : Colors.transparent,
+                              width: 2.w,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          'Register',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _currentMode == AuthMode.register
+                                ? UIColor.gold
+                                : UIColor.gold.withOpacity(0.6),
+                            fontSize: 16.sp,
+                            fontFamily: 'Familiar',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 24.h),
+              _currentMode == AuthMode.login
+                  ? _buildLoginForm()
+                  : _buildRegistrationForm(context),
+              SizedBox(height: 30.h),
+              GestureDetector(
+                onTap: () {
+                  log('LoginView: Submit button tapped, mode: $_currentMode');
+                  _currentMode == AuthMode.login ? _handleLogin() : _handleRegistration();
                 },
                 child: Container(
                   width: double.infinity,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
                   decoration: BoxDecoration(
-                      color: UIColor.gold,
-                      borderRadius: BorderRadius.circular(22.sp)),
+                    color: UIColor.gold,
+                    borderRadius: BorderRadius.circular(22.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: UIColor.gold.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
                   child: Text(
-                    'Login',
+                    _currentMode == AuthMode.login ? 'Login' : 'Create Account',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: UIColor.black,
                       fontSize: 18.sp,
                       fontFamily: 'Familiar',
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
-              SizedBox(
-                height: 15.h,
-              ),
-              CustomOutlinedBtn(
-                borderRadius: 22.sp,
-                borderColor: UIColor.gold,
-                padH: 12.w,
-                padV: 12.h,
-                btnText: 'Continue as guest',
-                btnTextColor: UIColor.gold,
-                fontSize: 18.sp,
-                onTapped: () {
-                  LocalStorage.setBool('isGuest', true).then((_) {
-                    LocalStorage.setString({'userName': 'Guest'});
-                    Navigator.pushAndRemoveUntil(
+              if (_currentMode == AuthMode.login) ...[
+                SizedBox(height: 15.h),
+                CustomOutlinedBtn(
+                  borderRadius: 22.r,
+                  borderColor: UIColor.gold,
+                  padH: 12.w,
+                  padV: 12.h,
+                  btnText: 'Continue as guest',
+                  btnTextColor: UIColor.gold,
+                  fontSize: 18.sp,
+                  onTapped: () {
+                    log('LoginView: Guest login button tapped');
+                    LocalStorage.setBool('isGuest', true).then((_) {
+                      LocalStorage.setString({'userName': 'Guest'});
+                      log('LoginView: Navigating to BottomNav for guest user');
+                      Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (context) => BottomNav()),
-                        (route) => false);
-                  });
-                },
-              ),
+                        (route) => false,
+                      );
+                    });
+                  },
+                ),
+              ],
+              SizedBox(height: 20.h),
             ],
           ),
         ),

@@ -1,3 +1,4 @@
+// core/services/auth_service.dart
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -9,92 +10,190 @@ import 'package:swiss_gold/core/utils/endpoint.dart';
 
 class AuthService {
   static final client = http.Client();
+  // static const String secretKey = 'mykey69';
+  static const String baseUrl = 'https://api.nova.aurify.ae/user';
+  static const String adminId = '67f37dfe4831e0eb637d09f1';
 
-static Future<UserModel?> login(Map<String, dynamic> payload) async {
-  try {
-    var response = await client.post(
-      Uri.parse(loginUrl),
-      headers: {
-        'X-Secret-Key': secreteKey,
-        'Content-Type': 'application/json'
-      },
-      body: jsonEncode(payload),
-    );
+  static Future<UserModel?> login(Map<String, dynamic> payload) async {
+    log('AuthService: Starting login request with payload: $payload');
+    try {
+      log('AuthService: Sending POST request to $baseUrl/login'); // Fixed to /user/login
+      var response = await client.post(
+        Uri.parse(loginUrl), 
+        headers: {
+          'X-Secret-Key': secreteKey,
+          'Content-Type': 'application/json' 
+        },
+        body: jsonEncode(payload),
+      );
 
-    Map<String, dynamic> responseData = jsonDecode(response.body);
-    
-    if (response.statusCode == 200) {
-      // Store user data in local storage
-      if (responseData.containsKey('_id') || 
-          responseData.containsKey('userId') ||
-          (responseData.containsKey('info') && responseData['info'].containsKey('_id'))) {
-        
-        String userId = '';
-        if (responseData.containsKey('_id')) {
-          userId = responseData['_id'];
-        } else if (responseData.containsKey('userId')) {
-          userId = responseData['userId'];
-        } else if (responseData.containsKey('info')) {
-          userId = responseData['info']['_id'];
+      log('AuthService: Login response status: ${response.statusCode}');
+      log('AuthService: Login response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = jsonDecode(response.body); 
+        log('AuthService: Parsed login response: $responseData');
+
+        String userId = responseData['user']?['_id'] ??
+                        responseData['_id'] ??
+                        responseData['userId'] ??
+                        (responseData['info']?['_id'] ?? '');
+        log('AuthService: Extracted userId: $userId');
+
+        if (userId.isNotEmpty) {
+          log('AuthService: Storing user data in local storage');
+          await Future.wait([
+            LocalStorage.setString({'userId': userId}),
+            if (responseData.containsKey('userDetails')) ...[
+              LocalStorage.setString({'userName': responseData['userDetails']['name'] ?? 'User'}),
+              LocalStorage.setString({'mobile': (responseData['userDetails']['contact'] ?? '').toString()}),
+              if (responseData['userDetails'].containsKey('categoryId'))
+                LocalStorage.setString({'categoryId': responseData['userDetails']['categoryId'] ?? ''}),
+              if (responseData['userDetails'].containsKey('categoryName'))
+                LocalStorage.setString({'category': responseData['userDetails']['categoryName'] ?? ''}),
+            ] else if (responseData.containsKey('info')) ...[
+              LocalStorage.setString({'userName': responseData['info']['userName'] ?? responseData['info']['companyName'] ?? 'User'}),
+              LocalStorage.setString({'mobile': (responseData['info']['contact'] ?? '').toString()}),
+            ],
+          ]);
+          log('AuthService: User data stored successfully');
+        } else {
+          log('AuthService: No userId found in response');
         }
-        
-        await LocalStorage.setString({'userId': userId});
-        
-        // Store other user details if available
-        if (responseData.containsKey('userDetails')) {
-          var userDetails = responseData['userDetails'];
-          await Future.wait([
-            LocalStorage.setString({'userName': userDetails['name'] ?? 'User'}),
-            LocalStorage.setString({'mobile': (userDetails['contact'] ?? '').toString()}),
-            if (userDetails.containsKey('categoryId'))
-              LocalStorage.setString({'categoryId': userDetails['categoryId'] ?? ''}),
-            if (userDetails.containsKey('categoryName'))
-              LocalStorage.setString({'category': userDetails['categoryName'] ?? ''}),
-          ]);
-        } else if (responseData.containsKey('info')) {
-          var info = responseData['info'];
-          await Future.wait([
-            LocalStorage.setString({'userName': info['userName'] ?? info['companyName'] ?? 'User'}),
-            LocalStorage.setString({'mobile': (info['contact'] ?? '').toString()}),
-          ]);
+        return UserModel.fromJson(responseData);
+      } else {
+        log('AuthService: Login failed with status ${response.statusCode}');
+        try {
+          Map<String, dynamic> responseData = jsonDecode(response.body);
+          return UserModel.withError(responseData);
+        } catch (e) {
+          log('AuthService: Failed to parse error response: ${response.body}');
+          return UserModel.withError({
+            'message': 'Server returned status ${response.statusCode}',
+            'success': false
+          });
         }
       }
-
-      return UserModel.fromJson(responseData);
-    } else {
-      return UserModel.withError(responseData);
+    } catch (e, stackTrace) {
+      log('AuthService: Login error: ${e.toString()}', stackTrace: stackTrace);
+      return UserModel.withError({
+        'message': 'An error occurred during login: $e',
+        'success': false
+      });
     }
-  } catch (e) {
-    log('Login service error: ${e.toString()}');
-    return UserModel.withError({
-      'message': 'An error occurred during login',
-      'success': false
-    });
   }
-}
 
-  static Future<MessageModel?> changePassword(
-      Map<String, dynamic> payload) async {
+  static Future<UserModel?> register(Map<String, dynamic> payload) async {
+    log('AuthService: Starting register request with payload: $payload');
     try {
-      var response = await client.put(
-        Uri.parse(changePassUrl),
+      log('AuthService: Sending POST request to $baseUrl/add-users/$adminId');
+      var response = await client.post(
+        Uri.parse('$baseUrl/add-users/$adminId'),
         headers: {
           'X-Secret-Key': secreteKey,
           'Content-Type': 'application/json'
         },
-        body: jsonEncode(payload), // Encoding payload to JSON
+        body: jsonEncode(payload),
       );
 
-      if (response.statusCode == 200) {
-        Map<String, dynamic> responseData = jsonDecode(response.body);
+      log('AuthService: Register response status: ${response.statusCode}');
+      log('AuthService: Register response body: ${response.body}');
 
-        return MessageModel.fromJson(responseData);
-      } else {
-        Map<String, dynamic> responseData = jsonDecode(response.body);
-
-        return MessageModel.withError(responseData);
+      Map<String, dynamic> responseData;
+      try {
+        responseData = jsonDecode(response.body);
+        log('AuthService: Parsed register response: $responseData');
+      } catch (e) {
+        log('AuthService: Failed to parse register response: ${response.body}');
+        return UserModel.withError({
+          'message': 'Invalid response format from server',
+          'success': false
+        });
       }
-    } catch (e) {
+
+      if ((response.statusCode == 200 || response.statusCode == 201) && responseData['success'] == true) {
+        String userId = responseData['user']['_id'] ?? '';
+        log('AuthService: Extracted userId: $userId');
+
+        if (userId.isNotEmpty) {
+          log('AuthService: Storing user data in local storage');
+          await Future.wait([
+            LocalStorage.setString({'userId': userId}),
+            LocalStorage.setString({'userName': responseData['user']['name'] ?? 'User'}),
+            LocalStorage.setString({'mobile': (responseData['user']['contact'] ?? '').toString()}),
+            LocalStorage.setString({'categoryId': responseData['user']['categoryId'] ?? ''}),
+            LocalStorage.setString({'category': responseData['user']['categoryName'] ?? ''}),
+          ]);
+          log('AuthService: User data stored successfully');
+        } else {
+          log('AuthService: No userId found in response');
+        }
+        return UserModel.fromJson(responseData);
+      } else {
+        log('AuthService: Registration failed with status ${response.statusCode}, response: $responseData');
+        return UserModel.withError(responseData);
+      }
+    } catch (e, stackTrace) {
+      log('AuthService: Registration error: ${e.toString()}', stackTrace: stackTrace);
+      return UserModel.withError({
+        'message': 'An error occurred during registration: $e',
+        'success': false
+      });
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>?> getCategories() async {
+    log('AuthService: Starting getCategories request');
+    try {
+      log('AuthService: Sending GET request to $baseUrl/getCategories/$adminId');
+      var response = await client.get(
+        Uri.parse('$baseUrl/getCategories/$adminId'),
+        headers: {
+          'X-Secret-Key': secreteKey,
+          'Content-Type': 'application/json'
+        },
+      );
+
+      log('AuthService: Get categories response status: ${response.statusCode}');
+      log('AuthService: Get categories response body: ${response.body}');
+
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        log('AuthService: Successfully fetched ${responseData['categories'].length} categories');
+        return List<Map<String, dynamic>>.from(responseData['categories']);
+      } else {
+        log('AuthService: Failed to fetch categories with status ${response.statusCode}, response: $responseData');
+        return null;
+      }
+    } catch (e, stackTrace) {
+      log('AuthService: Get categories error: ${e.toString()}', stackTrace: stackTrace);
+      return null;
+    }
+  }
+
+  static Future<MessageModel?> changePassword(Map<String, dynamic> payload) async {
+    log('AuthService: Starting changePassword request with payload: $payload');
+    try {
+      log('AuthService: Sending PUT request to $baseUrl/change-password');
+      var response = await client.put(
+        Uri.parse('$baseUrl/change-password'),
+        headers: {
+          'X-Secret-Key': secreteKey,
+          'Content-Type': 'application/json'
+        },
+        body: jsonEncode(payload),
+      );
+
+      log('AuthService: Change password response status: ${response.statusCode}');
+      log('AuthService: Change password response body: ${response.body}');
+
+      Map<String, dynamic> responseData = jsonDecode(response.body);
+      return response.statusCode == 200 
+          ? MessageModel.fromJson(responseData)
+          : MessageModel.withError(responseData);
+    } catch (e, stackTrace) {
+      log('AuthService: Change password error: ${e.toString()}', stackTrace: stackTrace);
       return null;
     }
   }
