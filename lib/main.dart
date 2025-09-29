@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (context) => CartViewModel()),
           ChangeNotifierProvider(create: (context) => ProfileViewModel()),
           ChangeNotifierProvider(create: (context) => NotificationProvider()),
-          ChangeNotifierProvider(create: (context) => CompanyProfileViewModel()),
+          ChangeNotifierProvider(create: (context) => CompanyProfileViewModel()), 
           ChangeNotifierProvider(create: (context) => OrderHistoryViewModel()),
           ChangeNotifierProvider(create: (context) => TransactionViewModel()),
           ChangeNotifierProvider(create: (context) => PendingOrdersProvider()),

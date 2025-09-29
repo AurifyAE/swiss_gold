@@ -8,7 +8,7 @@ import 'package:swiss_gold/core/utils/widgets/category_shimmer.dart';
 import 'package:swiss_gold/core/view_models/company_profile_view_model.dart';
 import 'package:swiss_gold/views/support/widgets/contact_card.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:appinio_video_player/appinio_video_player.dart';
+import 'package:video_player/video_player.dart';
 
 class ContactView extends StatefulWidget {
   const ContactView({super.key});
@@ -18,9 +18,10 @@ class ContactView extends StatefulWidget {
 }
 
 class _ContactViewState extends State<ContactView> {
-  late CustomVideoPlayerController controller;
+  VideoPlayerController? _videoController;
   bool isVideoInitialized = false;
   String? url;
+
   @override
   void initState() {
     super.initState();
@@ -28,40 +29,27 @@ class _ContactViewState extends State<ContactView> {
       final model =
           Provider.of<CompanyProfileViewModel>(context, listen: false);
       url = await model.fetchCompanyAd();
-      videoInitializer(url.toString());
-
+      _initializeVideo(url.toString());
       model.fetchCompanyProfile();
     });
   }
 
-  void videoInitializer(String url) {
-    VideoPlayerController videoPlayerController;
-    videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(url))
-      ..initialize().then((_) {
-        setState(() {
-          isVideoInitialized = true;
-        });
-      });
+  Future<void> _initializeVideo(String url) async {
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(url));
 
-    videoPlayerController.addListener(() {
-      if (videoPlayerController.value.position ==
-          videoPlayerController.value.duration) {
-        controller.videoPlayerController.play();
-      }
+    await _videoController!.initialize();
+    _videoController!.setLooping(true);
+    _videoController!.play();
+
+    setState(() {
+      isVideoInitialized = true;
     });
-    controller = CustomVideoPlayerController(
-        customVideoPlayerSettings: CustomVideoPlayerSettings(
-          showDurationRemaining: false,
-          controlBarAvailable: false,
-          showPlayButton: false,
-          showSeekButtons: false,
-          showFullscreenButton: false,
-          settingsButtonAvailable: false
+  }
 
-        ),
-        context: context,
-        videoPlayerController: videoPlayerController);
-    controller.videoPlayerController.play();
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
   }
 
   Future<void> openUrl(String url) async {
@@ -75,101 +63,94 @@ class _ContactViewState extends State<ContactView> {
             enableJavaScript: false,
           ),
         );
-      } else {
-        throw 'Could not launch $url';
       }
-    } catch (e) {
-      // Handle specific exceptions if needed
-      if (e is ArgumentError) {
-        // print('Invalid URL: $url');
-      } else if (e is UnsupportedError) {
-        // print('Launching $url is not supported.');
-      } else {
-        // print('Error launching $url: $e');
-      }
-      // Re-throw the exception for higher-level handling if necessary
-      rethrow;
-    }
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<CompanyProfileViewModel>(builder: (context, model, child) {
-              if (model.state == ViewState.loading) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(
-            3,
-            (index) => CategoryShimmer(),
-          )),
-    );
-              } else if (model.companyProfileModel == null) {
-    return SizedBox.shrink();
-              } else {
-    return Column(
-      children: [
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.53,
-          child: SingleChildScrollView(
-            physics: NeverScrollableScrollPhysics(),
-            child: Column(
+      if (model.state == ViewState.loading) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(
+              3,
+              (index) => const CategoryShimmer(),
+            ),
+          ),
+        );
+      } else if (model.companyProfileModel == null) {
+        return const SizedBox.shrink();
+      } else {
+        return Column(
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.53,
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    isVideoInitialized
+                        ? AspectRatio(
+                            aspectRatio: _videoController!.value.aspectRatio,
+                            child: VideoPlayer(_videoController!),
+                          )
+                        : Center(
+                            heightFactor: 15.h,
+                            child: CircularProgressIndicator(
+                              color: UIColor.gold,
+                            ),
+                          ),
+                  ],
+                ),
+              ),
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                isVideoInitialized?
-                CustomVideoPlayer(
-                  customVideoPlayerController: controller,
-                ):Center(
-                  heightFactor: 15.h,
-                  child: CircularProgressIndicator(color: UIColor.gold,),
+                ContactCard(
+                  icon: ImageAssets.whatsapp,
+                  title: 'Whatsapp',
+                  onTap: () async {
+                    if (model.companyProfileModel?.userDetails.contact != null) {
+                      await openUrl(
+                        'https://wa.me/${model.companyProfileModel!.userDetails.contact}',
+                      );
+                    }
+                  },
+                ),
+                ContactCard(
+                  icon: ImageAssets.gmail,
+                  title: 'Gmail',
+                  onTap: () async {
+                    if (model.companyProfileModel?.userDetails.email != null &&
+                        model.companyProfileModel!.userDetails.email.isNotEmpty) {
+                      await openUrl(
+                        'mailto:${model.companyProfileModel!.userDetails.email}',
+                      );
+                    }
+                  },
+                ),
+                ContactCard(
+                  icon: ImageAssets.phone,
+                  title: 'Contact',
+                  onTap: () {
+                    if (model.companyProfileModel?.userDetails.contact != null) {
+                      openUrl(
+                        'tel:${model.companyProfileModel!.userDetails.contact.toString()}',
+                      );
+                    }
+                  },
                 ),
               ],
             ),
-          ),
-        ),
-        Spacer(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-           ContactCard(
-      icon: ImageAssets.whatsapp,
-      title: 'Whatsapp',
-      onTap: () async {
-        if (model.companyProfileModel?.userDetails.contact != null) {
-          await openUrl(
-              'https://wa.me/${model.companyProfileModel!.userDetails.contact}');
-        }
-      },
-    ),
-    ContactCard(
-      icon: ImageAssets.gmail,
-      title: 'Gmail',
-      onTap: () async {
-        if (model.companyProfileModel?.userDetails.email != null && 
-            model.companyProfileModel!.userDetails.email.isNotEmpty) {
-          await openUrl(
-              'mailto:${model.companyProfileModel!.userDetails.email}');
-        }
-      },
-    ),
-    ContactCard(
-      icon: ImageAssets.phone,
-      title: 'Contact',
-      onTap: () {
-        if (model.companyProfileModel?.userDetails.contact != null) {
-          openUrl(
-              'tel:${model.companyProfileModel!.userDetails.contact.toString()}');
-        }
-      },
-    ),
+            SizedBox(height: 30.h),
           ],
-        ),
-        SizedBox(
-          height: 30.h,
-        ),
-      ],
-    );
-              }
-            });
+        );
+      }
+    });
   }
 }

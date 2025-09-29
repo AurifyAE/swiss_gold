@@ -28,19 +28,18 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  appinio_video_player: ^1.2.2
   cached_network_image: ^3.4.1
   carousel_slider: ^5.0.0
-  cloud_firestore: ^5.6.6
+  cloud_firestore: ^6.0.2
   cupertino_icons: ^1.0.8
-  device_info_plus: ^9.0.0
+  device_info_plus: ^12.1.0
   dio: ^5.8.0+1
-  firebase_core: ^3.10.1
-  firebase_database: ^11.3.5
-  firebase_messaging: ^15.2.1
+  firebase_core: ^4.1.1
+  firebase_database: ^12.0.2
+  firebase_messaging: ^16.0.2
   flutter:
     sdk: flutter
-  flutter_local_notifications: ^18.0.1
+  flutter_local_notifications: ^19.4.2
   flutter_screenutil: ^5.9.3
   fpdart: ^1.1.1
   http: ^1.2.2
@@ -50,18 +49,18 @@ dependencies:
   intl: ^0.20.2
   logger: ^2.5.0
   lottie: ^3.3.1
-  permission_handler: ^11.0.1
+  permission_handler: ^12.0.1
   phosphor_flutter: ^2.1.0
   provider: ^6.1.2
-  share_plus: ^10.1.4
+  share_plus: ^12.0.0
   shared_preferences: ^2.3.5
   shimmer: ^3.0.0
   socket_io_client: ^3.0.2
   url_launcher: ^6.3.1
-  video_player: ^2.6.0
+  video_player: ^2.10.0 
 
 dev_dependencies:
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
 

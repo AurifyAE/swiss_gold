@@ -504,7 +504,7 @@ void _syncQuantitiesFromViewModel() {
 
 
 
-  @override
+ @override
 Widget build(BuildContext context) {
   final goldRateProvider = Provider.of<GoldRateProvider>(context);
   return Focus(
@@ -608,305 +608,399 @@ Widget build(BuildContext context) {
           ],
         ),
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
-        child: RefreshIndicator(
-          backgroundColor: Colors.transparent,
-          color: UIColor.gold,
-          onRefresh: () async {
-            currentPage = 1;
-            final model = context.read<ProductViewModel>();
-            model.clearProducts();
-            await model.refreshUserStatus();
-            model.getSpotRate();
-            _syncQuantitiesFromViewModel();
-            // Refresh gold rate data
-            await goldRateProvider.refreshGoldData();
-            return Future.value();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Live Gold Rate Display
-                Consumer<GoldRateProvider>(
-                  builder: (context, goldRateProvider, child) {
-                    if (goldRateProvider.isLoading) {
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: 16.h),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 24.w,
-                              height: 24.h,
-                              child: CircularProgressIndicator(
-                                color: UIColor.gold,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              'Loading Gold Rate...',
-                              style: TextStyle(
-                                color: UIColor.gold,
-                                fontFamily: 'Familiar',
-                                fontSize: 16.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else if (goldRateProvider.goldData == null ||
-                        !goldRateProvider.isConnected) {
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: 16.h),
-                        child: Text(
-                          'Gold Rate Unavailable',
-                          style: TextStyle(
-                            color: UIColor.gold,
-                            fontFamily: 'Familiar',
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    } else {
-                      final goldData = goldRateProvider.goldData!;
-                      final bid = goldData['bid']?.toStringAsFixed(2) ?? 'N/A';
-                      final ask = goldRateProvider.calculateAskingPrice()?.toStringAsFixed(2) ?? 'N/A';
-                      final timestamp = goldData['timestamp'] ?? 'N/A';
-                      return Container(
-                        padding: EdgeInsets.all(12.w),
-                        margin: EdgeInsets.only(bottom: 16.h),
-                        decoration: BoxDecoration(
-                          color: UIColor.gold.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12.sp),
-                          border: Border.all(color: UIColor.gold, width: 1),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Live Gold Rate',
-                              style: TextStyle(
-                                color: UIColor.gold,
-                                fontFamily: 'Familiar',
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 8.h),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Bid: AED $bid',
-                                  style: TextStyle(
-                                    color: UIColor.white,
-                                    fontFamily: 'Familiar',
-                                    fontSize: 16.sp,
-                                  ),
-                                ),
-                                Text(
-                                  'Ask: AED $ask',
-                                  style: TextStyle(
-                                    color: UIColor.white,
-                                    fontFamily: 'Familiar',
-                                    fontSize: 16.sp,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              'Last Updated: $timestamp',
-                              style: TextStyle(
-                                color: UIColor.gold.withOpacity(0.7),
-                                fontFamily: 'Familiar',
-                                fontSize: 12.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                  },
-                ),
-                // Existing Product List
-                Consumer<ProductViewModel>(
-                  builder: (context, model, child) {
-                    if (model.state == ViewState.loading) {
-                      return Center(
-                        child: Lottie.asset(ImageAssets.loading),
-                      );
-                    } else if (model.productList.isEmpty) {
-                      return Center(
-                        heightFactor: 2.h,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(ImageAssets.noProducts),
-                            SizedBox(height: 10.h),
-                            Text(
-                              "Sorry no products found\ntry some other category",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: UIColor.gold,
-                                fontSize: 20.sp,
-                                fontFamily: 'Familiar',
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      void updateQuantityDirectly(int index, int newQuantity) {
-                        if (index >= model.productList.length) {
-                          log('Invalid index: $index for product list');
-                          return;
-                        }
-                        final product = model.productList[index];
-                        final String productId = product.pId;
-                        final int oldQuantity = productQuantities[index] ?? 0;
-                        final int difference = newQuantity - oldQuantity;
-                        log('Updating quantity directly for product: $productId at index: $index from $oldQuantity to $newQuantity');
-                        setState(() {
-                          if (newQuantity > 0) {
-                            productQuantities[index] = newQuantity;
-                            log('Updated quantity: $newQuantity for index: $index');
-                          } else {
-                            productQuantities.remove(index);
-                            log('Removed index: $index from productQuantities as quantity is 0');
-                          }
-                          model.getTotalQuantity(Map<int, int>.from(productQuantities));
-                          if (difference > 0) {
-                            for (int i = 0; i < difference; i++) {
-                              addToBookingData(index, product.pId);
-                            }
-                          } else if (difference < 0) {
-                            for (int i = 0; i < difference.abs(); i++) {
-                              removeFromBookingData(index, product.pId);
-                            }
-                          }
-                        });
-                        if (model.isGuest == false) {
-                          context.read<CartViewModel>().updateCartQuantity(productId, newQuantity).then((result) {
-                            if (result != null && result.success == true) {
-                              log('Cart updated for product: $productId with quantity: $newQuantity');
-                              if (bookingData.isNotEmpty && newQuantity > 0) {}
-                            } else {
-                              log('Failed to update cart: ${result?.message ?? "Unknown error"}');
-                            }
-                          }).catchError((error) {
-                            log('Error updating cart: $error');
-                          });
-                        } else {
-                          log('User in guest mode, cart not updated on server');
-                        }
-                      }
-                      return Column(
-                        children: [
-                          ListView.builder(
-                            physics: BouncingScrollPhysics(),
-                            key: PageStorageKey('productKey'),
-                            shrinkWrap: true,
-                            itemCount: model.productList.length,
-                            itemBuilder: (context, index) {
-                              final product = model.productList[index];
-                              Map<String, double> pricing = calculateProductPricing(
-                                product: product,
-                                quantity: 1,
-                                goldRateProvider: goldRateProvider,
-                                calculationContext: "PRODUCT_DETAILS Item #$index ",
-                              );
-                              final String productId = product.pId;
-                              final String imageUrl = product.prodImgs.isNotEmpty
-                                  ? product.prodImgs[0].url
-                                  : 'https://via.placeholder.com/150';
-                              final String title = product.title;
-                              final int quantity = productQuantities[index] ?? 0;
-                              final price = pricing['basePrice']!;
-                              final String productType = product.type ?? 'Unknown';
-                              return Padding(
-                                padding: EdgeInsets.only(bottom: 16.h),
-                                child: CustomCard(
-                                  onIncrement: () => incrementQuantity(index),
-                                  onDecrement: () => decrementQuantity(index),
-                                  onQuantityEntered: (newQuantity) => updateQuantityDirectly(index, newQuantity),
-                                  onAddToCart: () {
-                                    if (model.isGuest == false) {
-                                      context.read<CartViewModel>().updateQuantityFromHome(productId, {
-                                        'quantity': productQuantities[index] ?? 1,
-                                      }).then((response) {
-                                        if (response?.success == true) {
-                                          setState(() {
-                                            productQuantities.remove(index);
-                                          });
-                                          model.getTotalQuantity(Map<int, int>.from(productQuantities));
-                                        }
-                                        customSnackBar(
-                                          context: context,
-                                          width: 250.w,
-                                          bgColor: UIColor.gold,
-                                          title: response?.message?.toString() ?? 'Action completed',
-                                        );
-                                      });
-                                    } else {
-                                      Navigator.pushAndRemoveUntil(
-                                        context,
-                                        MaterialPageRoute(builder: (context) => LoginView()),
-                                        (route) => false,
-                                      );
-                                    }
-                                  },
-                                  prodImg: imageUrl,
-                                  title: title,
-                                  quantity: quantity,
-                                  price: price,
-                                  subTitle: productType,
-                                  onTap: () {
-                                    navigateWithAnimationTo(
-                                      context,
-                                      ProductView(
-                                        prodImg: product.prodImgs.map((e) => e.url).toList(),
-                                        title: title,
-                                        pId: productId,
-                                        desc: product.desc,
-                                        type: productType,
-                                        stock: product.stock,
-                                        purity: product.purity,
-                                        weight: product.weight,
-                                        makingCharge: product.makingCharge,
-                                      ),
-                                      0,
-                                      1,
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                          if (model.state == ViewState.loadingMore)
-                            Padding(
-                              padding: EdgeInsets.only(top: 20.h),
-                              child: Center(
-                                child: CircularProgressIndicator(color: UIColor.gold),
-                              ),
-                            ),
-                        ],
-                      );
-                    }
-                  },
+      body: Column(
+        children: [
+          // Sticky Gold Rate Section
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + 16.h,
+              left: 16.w,
+              right: 16.w,
+              bottom: 8.h,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
+            child: Consumer<GoldRateProvider>(
+              builder: (context, goldRateProvider, child) {
+                if (goldRateProvider.isLoading) {
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: UIColor.gold.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.sp),
+                      border: Border.all(color: UIColor.gold.withOpacity(0.3), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 14.w,
+                          height: 14.h,
+                          child: CircularProgressIndicator(
+                            color: UIColor.gold,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          'Loading rate...',
+                          style: TextStyle(
+                            color: UIColor.gold,
+                            fontFamily: 'Familiar',
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } 
+                
+                if (goldRateProvider.goldData == null || !goldRateProvider.isConnected) {
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.sp),
+                      border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.signal_wifi_off, color: Colors.red, size: 14.sp),
+                        SizedBox(width: 6.w),
+                        Text(
+                          'Rate unavailable',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontFamily: 'Familiar',
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        GestureDetector(
+                          onTap: () => goldRateProvider.refreshGoldData(),
+                          child: Icon(Icons.refresh, color: Colors.red, size: 14.sp),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+               final goldData = goldRateProvider.goldData!;
+// Change from using bid to using the calculated asking price
+final displayPrice = goldRateProvider.getDisplayPrice(); // This will show asking price
+final high = goldData['high']?.toStringAsFixed(2) ?? 'N/A';
+final low = goldData['low']?.toStringAsFixed(2) ?? 'N/A';
+
+return Container(
+  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+  decoration: BoxDecoration(
+    color: UIColor.gold.withOpacity(0.08),
+    borderRadius: BorderRadius.circular(8.sp),
+    border: Border.all(color: UIColor.gold, width: 2),
+  ),
+  child: Row(
+    children: [
+      // Live indicator
+      Container(
+        width: 6.w,
+        height: 6.h,
+        decoration: BoxDecoration(
+          color: Colors.green,
+          shape: BoxShape.circle,
+        ),
+      ),
+      SizedBox(width: 8.w),
+      
+      // Main rate - now showing asking price
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Gold Rate (Ask)', // Updated label to indicate it's ask price
+              style: TextStyle(
+                color: UIColor.gold.withOpacity(0.7),
+                fontFamily: 'Familiar',
+                fontSize: 10.sp,
+              ),
+            ),
+            Text(
+              '\$$displayPrice', // Now shows calculated asking price
+              style: TextStyle(
+                color: UIColor.gold,
+                fontFamily: 'Familiar',
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      
+      // High/Low compact
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.keyboard_arrow_up, color: Colors.green, size: 12.sp),
+              Text(
+                '\$$high',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontFamily: 'Familiar',
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.keyboard_arrow_down, color: Colors.red, size: 12.sp),
+              Text(
+                '\$$low',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontFamily: 'Familiar',
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      
+      SizedBox(width: 8.w),
+      
+      // Refresh button
+      GestureDetector(
+        onTap: () => goldRateProvider.refreshGoldData(),
+        child: Container(
+          padding: EdgeInsets.all(4.w),
+          child: Icon(
+            Icons.refresh,
+            color: UIColor.gold.withOpacity(0.7),
+            size: 14.sp,
           ),
         ),
       ),
-    ),
+    ],
+  ),
+); 
+              },
+            ),
+          ),
+          
+          // Scrollable Content
+          Expanded(
+            child: RefreshIndicator(
+              backgroundColor: Colors.transparent, 
+              color: UIColor.gold,
+              onRefresh: () async {
+                currentPage = 1;
+                final model = context.read<ProductViewModel>(); 
+                model.clearProducts();
+                await model.refreshUserStatus();
+                model.getSpotRate();
+                _syncQuantitiesFromViewModel();
+                // Refresh gold rate data
+                await goldRateProvider.refreshGoldData();
+                return Future.value();
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                controller: scrollController,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  child: Consumer<ProductViewModel>(
+                    builder: (context, model, child) {
+                      if (model.state == ViewState.loading) {
+                        return Center(
+                          child: Lottie.asset(ImageAssets.loading),
+                        );
+                      } else if (model.productList.isEmpty) {
+                        return Center(
+                          heightFactor: 2.h,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset(ImageAssets.noProducts),
+                              SizedBox(height: 10.h),
+                              Text(
+                                "Sorry no products found\ntry some other category",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: UIColor.gold,
+                                  fontSize: 20.sp,
+                                  fontFamily: 'Familiar',
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        void updateQuantityDirectly(int index, int newQuantity) {
+                          if (index >= model.productList.length) {
+                            log('Invalid index: $index for product list');
+                            return;
+                          }
+                          final product = model.productList[index];
+                          final String productId = product.pId;
+                          final int oldQuantity = productQuantities[index] ?? 0;
+                          final int difference = newQuantity - oldQuantity;
+                          log('Updating quantity directly for product: $productId at index: $index from $oldQuantity to $newQuantity');
+                          setState(() {
+                            if (newQuantity > 0) {
+                              productQuantities[index] = newQuantity;
+                              log('Updated quantity: $newQuantity for index: $index');
+                            } else {
+                              productQuantities.remove(index);
+                              log('Removed index: $index from productQuantities as quantity is 0');
+                            }
+                            model.getTotalQuantity(Map<int, int>.from(productQuantities));
+                            if (difference > 0) {
+                              for (int i = 0; i < difference; i++) {
+                                addToBookingData(index, product.pId);
+                              }
+                            } else if (difference < 0) {
+                              for (int i = 0; i < difference.abs(); i++) {
+                                removeFromBookingData(index, product.pId);
+                              }
+                            }
+                          });
+                          if (model.isGuest == false) {
+                            context.read<CartViewModel>().updateCartQuantity(productId, newQuantity).then((result) {
+                              if (result != null && result.success == true) {
+                                log('Cart updated for product: $productId with quantity: $newQuantity');
+                                if (bookingData.isNotEmpty && newQuantity > 0) {}
+                              } else {
+                                log('Failed to update cart: ${result?.message ?? "Unknown error"}');
+                              }
+                            }).catchError((error) {
+                              log('Error updating cart: $error');
+                            });
+                          } else {
+                            log('User in guest mode, cart not updated on server');
+                          }
+                        }
+                        
+                        return Column(
+                          children: [
+                            ListView.builder(
+                              physics: NeverScrollableScrollPhysics(),
+                              key: PageStorageKey('productKey'),
+                              shrinkWrap: true,
+                              itemCount: model.productList.length,
+                              itemBuilder: (context, index) {
+                                final product = model.productList[index];
+                                Map<String, double> pricing = calculateProductPricing(
+                                  product: product,
+                                  quantity: 1,
+                                  goldRateProvider: goldRateProvider,
+                                  calculationContext: "PRODUCT_DETAILS Item #$index ",
+                                );
+                                final String productId = product.pId;
+                                final String imageUrl = product.prodImgs.isNotEmpty
+                                    ? product.prodImgs[0].url
+                                    : 'https://via.placeholder.com/150';
+                                final String title = product.title;
+                                final int quantity = productQuantities[index] ?? 0;
+                                final price = pricing['basePrice']!;
+                                final String productType = product.type ?? 'Unknown';
+                                return Padding(
+                                  padding: EdgeInsets.only(bottom: 16.h),
+                                  child: CustomCard(
+                                    onIncrement: () => incrementQuantity(index),
+                                    onDecrement: () => decrementQuantity(index),
+                                    onQuantityEntered: (newQuantity) => updateQuantityDirectly(index, newQuantity),
+                                    onAddToCart: () {
+                                      if (model.isGuest == false) {
+                                        context.read<CartViewModel>().updateQuantityFromHome(productId, {
+                                          'quantity': productQuantities[index] ?? 1,
+                                        }).then((response) {
+                                          if (response?.success == true) {
+                                            setState(() {
+                                              productQuantities.remove(index);
+                                            });
+                                            model.getTotalQuantity(Map<int, int>.from(productQuantities));
+                                          }
+                                          customSnackBar(
+                                            context: context,
+                                            width: 250.w,
+                                            bgColor: UIColor.gold,
+                                            title: response?.message?.toString() ?? 'Action completed',
+                                          );
+                                        });
+                                      } else {
+                                        Navigator.pushAndRemoveUntil(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => LoginView()),
+                                          (route) => false,
+                                        );
+                                      }
+                                    },
+                                    prodImg: imageUrl,
+                                    title: title,
+                                    quantity: quantity,
+                                    price: price,
+                                    subTitle: productType,
+                                    onTap: () {
+                                      navigateWithAnimationTo(
+                                        context,
+                                        ProductView(
+                                          prodImg: product.prodImgs.map((e) => e.url).toList(),
+                                          title: title,
+                                          pId: productId,
+                                          desc: product.desc,
+                                          type: productType,
+                                          stock: product.stock,
+                                          purity: product.purity,
+                                          weight: product.weight,
+                                          makingCharge: product.makingCharge,
+                                        ),
+                                        0,
+                                        1,
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                            if (model.state == ViewState.loadingMore)
+                              Padding(
+                                padding: EdgeInsets.only(top: 20.h),
+                                child: Center(
+                                  child: CircularProgressIndicator(color: UIColor.gold),
+                                ),
+                              ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ), 
   );  
 }
 
