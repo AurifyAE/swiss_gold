@@ -90,12 +90,6 @@ class _LoginViewState extends State<LoginView> {
       return false;
     }
 
-    if (Provider.of<AuthViewModel>(context, listen: false).selectedCategoryId == null) {
-      log('LoginView: Validation failed - no category selected');
-      customSnackBar(context: context, title: 'Please select a category');
-      return false;
-    }
-
     log('LoginView: Registration form validation passed');
     return true;
   }
@@ -103,7 +97,7 @@ class _LoginViewState extends State<LoginView> {
   void _showCategoryBottomSheet(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     log('LoginView: Opening category bottom sheet with ${authViewModel.categories.length} categories');
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -133,7 +127,7 @@ class _LoginViewState extends State<LoginView> {
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
-              
+
               // Header
               Padding(
                 padding: EdgeInsets.only(left: 20.w, right: 20.w, bottom: 16.h),
@@ -147,12 +141,16 @@ class _LoginViewState extends State<LoginView> {
                   ),
                 ),
               ),
-              
+
               // Categories List
               Flexible(
                 child: Consumer<AuthViewModel>(
                   builder: (ctx, authVM, _) {
-                    if (authVM.categories.isEmpty) {
+                    final categories = [
+                      {'_id': 'default', 'name': 'Default'},
+                      ...authVM.categories
+                    ];
+                    if (categories.isEmpty) {
                       return Center(
                         child: Padding(
                           padding: EdgeInsets.all(24.h),
@@ -167,15 +165,15 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       );
                     }
-                    
+
                     return ListView.builder(
                       shrinkWrap: true,
                       padding: EdgeInsets.only(bottom: 20.h),
-                      itemCount: authVM.categories.length,
+                      itemCount: categories.length,
                       itemBuilder: (context, index) {
-                        final category = authVM.categories[index];
+                        final category = categories[index];
                         final isSelected = authVM.selectedCategoryId == category['_id'];
-                        
+
                         return InkWell(
                           onTap: () {
                             log('LoginView: Category selected: ${category['_id']}');
@@ -190,8 +188,8 @@ class _LoginViewState extends State<LoginView> {
                               vertical: 14.h,
                             ),
                             decoration: BoxDecoration(
-                              color: isSelected 
-                                  ? UIColor.gold.withOpacity(0.15) 
+                              color: isSelected
+                                  ? UIColor.gold.withOpacity(0.15)
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(10.r),
                             ),
@@ -211,7 +209,7 @@ class _LoginViewState extends State<LoginView> {
                                     ),
                                   ),
                                 ),
-                                
+
                                 // Check icon
                                 if (isSelected)
                                   Icon(
@@ -238,17 +236,21 @@ class _LoginViewState extends State<LoginView> {
   Widget _buildCategorySelector(BuildContext context) {
     return Consumer<AuthViewModel>(
       builder: (context, authViewModel, child) {
-        final selectedCategory = authViewModel.categories.firstWhere(
+        final categories = [
+          {'_id': 'default', 'name': 'Default'},
+          ...authViewModel.categories
+        ];
+        final selectedCategory = categories.firstWhere(
           (cat) => cat['_id'] == authViewModel.selectedCategoryId,
-          orElse: () => {'name': ''},
+          orElse: () => {'_id': 'default', 'name': 'Default'},
         );
-        
+
         return GestureDetector(
           onTap: () => _showCategoryBottomSheet(context),
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22.r), 
+              borderRadius: BorderRadius.circular(22.r),
               border: Border.all(
                 color: UIColor.gold,
                 width: 1,
@@ -258,9 +260,7 @@ class _LoginViewState extends State<LoginView> {
               children: [
                 Expanded(
                   child: Text(
-                    selectedCategory['name'].isEmpty
-                        ? 'Category'
-                        : selectedCategory['name'],
+                    selectedCategory['name'],
                     style: TextStyle(
                       color: UIColor.gold,
                       fontSize: 16.sp,
@@ -283,9 +283,9 @@ class _LoginViewState extends State<LoginView> {
 
   Widget _buildHeader() {
     String title = _currentMode == AuthMode.login ? 'Hello Again!' : 'Create Account';
-    String subtitle = _currentMode == AuthMode.login 
+    String subtitle = _currentMode == AuthMode.login
         ? 'Welcome back, You have been missed.'
-        : 'Join us and start your journey today.'; 
+        : 'Join us and start your journey today.';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,8 +409,10 @@ class _LoginViewState extends State<LoginView> {
     final payload = {
       "contact": int.parse(mobileController.text),
       "password": passController.text,
-      'token': token,
     };
+    if (token != null) {
+      payload['token'] = token;
+    }
     log('LoginView: Login payload: $payload');
 
     final response = await Provider.of<AuthViewModel>(context, listen: false).login(payload);
@@ -474,12 +476,20 @@ class _LoginViewState extends State<LoginView> {
     final payload = {
       "name": nameController.text,
       "email": emailController.text,
-      "categoryId": authViewModel.selectedCategoryId,
       "address": addressController.text,
       "contact": mobileController.text,
       "password": passController.text,
-      "token": token,
     };
+
+    // Only include categoryId if it's not 'default'
+    if (authViewModel.selectedCategoryId != 'default') {
+      payload["categoryId"] = authViewModel.selectedCategoryId!; 
+    }
+    // Only include token if it's not null
+    if (token != null) {
+      payload["token"] = token;
+    }
+
     log('LoginView: Registration payload: $payload');
 
     final response = await authViewModel.register(payload);
@@ -514,7 +524,7 @@ class _LoginViewState extends State<LoginView> {
         context: context,
         title: response.message,
         bgColor: UIColor.gold,
-        width: 200.w,  
+        width: 200.w,
       );
 
       // Clear form fields

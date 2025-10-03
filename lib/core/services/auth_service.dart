@@ -1,4 +1,3 @@
-// core/services/auth_service.dart
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -10,19 +9,18 @@ import 'package:swiss_gold/core/utils/endpoint.dart';
 
 class AuthService {
   static final client = http.Client();
-  // static const String secretKey = 'mykey69';
   static const String baseUrl = 'https://api.nova.aurify.ae/user';
   static const String adminId = '67f37dfe4831e0eb637d09f1';
 
   static Future<UserModel?> login(Map<String, dynamic> payload) async {
     log('AuthService: Starting login request with payload: $payload');
     try {
-      log('AuthService: Sending POST request to $baseUrl/login'); // Fixed to /user/login
+      log('AuthService: Sending POST request to $baseUrl/login');
       var response = await client.post(
-        Uri.parse(loginUrl), 
+        Uri.parse(loginUrl),
         headers: {
           'X-Secret-Key': secreteKey,
-          'Content-Type': 'application/json' 
+          'Content-Type': 'application/json'
         },
         body: jsonEncode(payload),
       );
@@ -31,7 +29,7 @@ class AuthService {
       log('AuthService: Login response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        Map<String, dynamic> responseData = jsonDecode(response.body); 
+        Map<String, dynamic> responseData = jsonDecode(response.body);
         log('AuthService: Parsed login response: $responseData');
 
         String userId = responseData['user']?['_id'] ??
@@ -112,23 +110,31 @@ class AuthService {
       }
 
       if ((response.statusCode == 200 || response.statusCode == 201) && responseData['success'] == true) {
-        String userId = responseData['user']['_id'] ?? '';
+        // Since the response doesn't contain user data, we create a minimal UserModel
+        String userId = responseData['user']?['_id'] ?? '';
         log('AuthService: Extracted userId: $userId');
 
         if (userId.isNotEmpty) {
           log('AuthService: Storing user data in local storage');
           await Future.wait([
             LocalStorage.setString({'userId': userId}),
-            LocalStorage.setString({'userName': responseData['user']['name'] ?? 'User'}),
-            LocalStorage.setString({'mobile': (responseData['user']['contact'] ?? '').toString()}),
-            LocalStorage.setString({'categoryId': responseData['user']['categoryId'] ?? ''}),
-            LocalStorage.setString({'category': responseData['user']['categoryName'] ?? ''}),
+            LocalStorage.setString({'userName': payload['name'] ?? 'User'}),
+            LocalStorage.setString({'mobile': (payload['contact'] ?? '').toString()}),
+            if (payload.containsKey('categoryId'))
+              LocalStorage.setString({'categoryId': payload['categoryId'] ?? ''}),
+            // Note: categoryName is not available in payload or response, so we skip it
           ]);
           log('AuthService: User data stored successfully');
         } else {
-          log('AuthService: No userId found in response');
+          log('AuthService: No userId found in response, using payload data for UserModel');
         }
-        return UserModel.fromJson(responseData);
+
+        // Return a UserModel with the available data
+        return UserModel(
+          success: true,
+          message: responseData['message'] ?? 'User added successfully',
+          userId: userId,
+        );
       } else {
         log('AuthService: Registration failed with status ${response.statusCode}, response: $responseData');
         return UserModel.withError(responseData);
@@ -189,7 +195,7 @@ class AuthService {
       log('AuthService: Change password response body: ${response.body}');
 
       Map<String, dynamic> responseData = jsonDecode(response.body);
-      return response.statusCode == 200 
+      return response.statusCode == 200
           ? MessageModel.fromJson(responseData)
           : MessageModel.withError(responseData);
     } catch (e, stackTrace) {

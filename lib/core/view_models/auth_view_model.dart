@@ -11,7 +11,7 @@ class AuthViewModel extends BaseModel {
   MessageModel? _messageModel;
   bool _isGuest = false;
   List<Map<String, dynamic>> _categories = [];
-  String? _selectedCategoryId;
+  String? _selectedCategoryId = 'default';
 
   bool get isGuest => _isGuest;
   UserModel? get userModel => _userModel;
@@ -61,15 +61,17 @@ class AuthViewModel extends BaseModel {
       final categories = await AuthService.getCategories();
       if (categories != null) {
         _categories = categories;
-        _selectedCategoryId = categories.isNotEmpty ? categories[0]['_id'] : null;
+        _selectedCategoryId = 'default';
         log('AuthViewModel: Fetched ${_categories.length} categories, selectedCategoryId: $_selectedCategoryId');
       } else {
         log('AuthViewModel: No categories fetched');
         _categories = [];
+        _selectedCategoryId = 'default';
       }
     } catch (e, stackTrace) {
       log('AuthViewModel: Fetch categories error: ${e.toString()}', stackTrace: stackTrace);
       _categories = [];
+      _selectedCategoryId = 'default';
     }
     setState(ViewState.idle);
     log('AuthViewModel: Category fetch state changed to idle');
@@ -78,7 +80,7 @@ class AuthViewModel extends BaseModel {
 
   void setSelectedCategory(String? categoryId) {
     log('AuthViewModel: Setting selected category to: $categoryId');
-    _selectedCategoryId = categoryId;
+    _selectedCategoryId = categoryId ?? 'default';
     notifyListeners();
   }
 
@@ -87,7 +89,6 @@ class AuthViewModel extends BaseModel {
     setState(ViewState.loading);
     try {
       _messageModel = await AuthService.changePassword(payload);
-      // log('AuthViewModel: Change password result: ${_messageModel?.toJson()}');
     } catch (e, stackTrace) {
       log('AuthViewModel: Change password error: ${e.toString()}', stackTrace: stackTrace);
     }
@@ -103,7 +104,7 @@ class AuthViewModel extends BaseModel {
       log('AuthViewModel: Guest mode status: $_isGuest');
     } catch (e, stackTrace) {
       log('AuthViewModel: Error checking guest mode: ${e.toString()}', stackTrace: stackTrace);
-      _isGuest = false;
+      _isGuest = false; 
     }
     notifyListeners();
   }
@@ -114,7 +115,7 @@ class AuthViewModel extends BaseModel {
     _messageModel = null;
     _isGuest = false;
     _categories = [];
-    _selectedCategoryId = null;
+    _selectedCategoryId = 'default';
     notifyListeners();
     log('AuthViewModel: Logout completed');
   }
