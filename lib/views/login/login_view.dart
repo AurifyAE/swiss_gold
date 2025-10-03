@@ -100,11 +100,192 @@ class _LoginViewState extends State<LoginView> {
     return true;
   }
 
+  void _showCategoryBottomSheet(BuildContext context) {
+    final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+    log('LoginView: Opening category bottom sheet with ${authViewModel.categories.length} categories');
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext bottomSheetContext) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          decoration: BoxDecoration(
+            color: UIColor.black,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20.r),
+              topRight: Radius.circular(20.r),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: EdgeInsets.symmetric(vertical: 12.h),
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: UIColor.gold.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              
+              // Header
+              Padding(
+                padding: EdgeInsets.only(left: 20.w, right: 20.w, bottom: 16.h),
+                child: Text(
+                  'Select Category',
+                  style: TextStyle(
+                    color: UIColor.gold,
+                    fontSize: 18.sp,
+                    fontFamily: 'Familiar',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              
+              // Categories List
+              Flexible(
+                child: Consumer<AuthViewModel>(
+                  builder: (ctx, authVM, _) {
+                    if (authVM.categories.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24.h),
+                          child: Text(
+                            'No categories available',
+                            style: TextStyle(
+                              color: UIColor.gold.withOpacity(0.5),
+                              fontSize: 14.sp,
+                              fontFamily: 'Familiar',
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.only(bottom: 20.h),
+                      itemCount: authVM.categories.length,
+                      itemBuilder: (context, index) {
+                        final category = authVM.categories[index];
+                        final isSelected = authVM.selectedCategoryId == category['_id'];
+                        
+                        return InkWell(
+                          onTap: () {
+                            log('LoginView: Category selected: ${category['_id']}');
+                            Provider.of<AuthViewModel>(context, listen: false)
+                                .setSelectedCategory(category['_id']);
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 4.h),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 14.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                  ? UIColor.gold.withOpacity(0.15) 
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: Row(
+                              children: [
+                                // Category name
+                                Expanded(
+                                  child: Text(
+                                    category['name'],
+                                    style: TextStyle(
+                                      color: UIColor.gold,
+                                      fontSize: 15.sp,
+                                      fontFamily: 'Familiar',
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                                
+                                // Check icon
+                                if (isSelected)
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: UIColor.gold,
+                                    size: 20.sp,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCategorySelector(BuildContext context) {
+    return Consumer<AuthViewModel>(
+      builder: (context, authViewModel, child) {
+        final selectedCategory = authViewModel.categories.firstWhere(
+          (cat) => cat['_id'] == authViewModel.selectedCategoryId,
+          orElse: () => {'name': ''},
+        );
+        
+        return GestureDetector(
+          onTap: () => _showCategoryBottomSheet(context),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22.r), 
+              border: Border.all(
+                color: UIColor.gold,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    selectedCategory['name'].isEmpty
+                        ? 'Category'
+                        : selectedCategory['name'],
+                    style: TextStyle(
+                      color: UIColor.gold,
+                      fontSize: 16.sp,
+                      fontFamily: 'Familiar',
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: UIColor.gold,
+                  size: 22.sp,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHeader() {
     String title = _currentMode == AuthMode.login ? 'Hello Again!' : 'Create Account';
     String subtitle = _currentMode == AuthMode.login 
         ? 'Welcome back, You have been missed.'
-        : 'Join us and start your journey today.';
+        : 'Join us and start your journey today.'; 
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,49 +317,6 @@ class _LoginViewState extends State<LoginView> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCategorySelector(BuildContext context) {
-    final authViewModel = Provider.of<AuthViewModel>(context);
-    log('LoginView: Building category selector with ${authViewModel.categories.length} categories');
-    return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
-        labelText: 'Category',
-        labelStyle: TextStyle(
-          color: UIColor.gold,
-          fontSize: 16.sp,
-          fontFamily: 'Familiar',
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: UIColor.gold.withOpacity(0.5)),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: UIColor.gold),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-      ),
-      value: authViewModel.selectedCategoryId,
-      items: authViewModel.categories.map((category) {
-        return DropdownMenuItem<String>(
-          value: category['_id'],
-          child: Text(
-            category['name'],
-            style: TextStyle(
-              color: UIColor.gold,
-              fontSize: 14.sp,
-              fontFamily: 'Familiar',
-            ),
-          ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        log('LoginView: Category selected: $value');
-        authViewModel.setSelectedCategory(value);
-      },
-      dropdownColor: Colors.black,
-      icon: Icon(Icons.arrow_drop_down, color: UIColor.gold),
     );
   }
 
@@ -376,7 +514,7 @@ class _LoginViewState extends State<LoginView> {
         context: context,
         title: response.message,
         bgColor: UIColor.gold,
-        width: 130.w,
+        width: 200.w,  
       );
 
       // Clear form fields
