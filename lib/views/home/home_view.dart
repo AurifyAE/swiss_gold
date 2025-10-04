@@ -349,7 +349,7 @@ void _syncQuantitiesFromViewModel() {
 
     final productList = context.read<ProductViewModel>().productList;
     productQuantities.forEach((index, quantity) {
-      if (index < productList.length && quantity > 0) {
+      if (index < productList.length && quantity > 0) { 
         final product = productList[index];
         bookingData.add({
           "productId": product.pId,
@@ -612,200 +612,147 @@ Widget build(BuildContext context) {
         children: [
           // Sticky Gold Rate Section
           Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 16.h,
-              left: 16.w,
-              right: 16.w,
-              bottom: 8.h,
+  width: double.infinity,
+  padding: EdgeInsets.only(
+    top: MediaQuery.of(context).padding.top + 16.h,
+    left: 16.w,
+    right: 16.w,
+    bottom: 8.h,
+  ),
+  decoration: BoxDecoration(
+    color: Theme.of(context).scaffoldBackgroundColor,
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.05),
+        blurRadius: 4,
+        offset: Offset(0, 2),
+      ),
+    ],
+  ),
+  child: Consumer<GoldRateProvider>(
+    builder: (context, goldRateProvider, child) {
+      // Show skeleton loader when loading or data unavailable
+      if (goldRateProvider.isLoading || 
+          goldRateProvider.goldData == null || 
+          !goldRateProvider.isConnected) {
+        return _buildSkeletonGoldRate(
+          context,
+          isLoading: goldRateProvider.isLoading,
+          onRefresh: () => goldRateProvider.refreshGoldData(),
+        );
+      }
+
+      // Show actual gold rate data
+      final goldData = goldRateProvider.goldData!;
+      final displayPrice = goldRateProvider.getDisplayPrice();
+      final high = goldData['high']?.toStringAsFixed(2) ?? 'N/A';
+      final low = goldData['low']?.toStringAsFixed(2) ?? 'N/A';
+
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: UIColor.gold.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8.sp),
+          border: Border.all(color: UIColor.gold, width: 2),
+        ),
+        child: Row(
+          children: [
+            // Live indicator
+            Container(
+              width: 6.w,
+              height: 6.h,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+              ),
             ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
+            SizedBox(width: 8.w),
+            
+            // Main rate - showing asking price
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Gold Rate (Ask)',
+                    style: TextStyle(
+                      color: UIColor.gold.withOpacity(0.7),
+                      fontFamily: 'Familiar',
+                      fontSize: 10.sp,
+                    ),
+                  ),
+                  Text(
+                    '\$$displayPrice',
+                    style: TextStyle(
+                      color: UIColor.gold,
+                      fontFamily: 'Familiar',
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // High/Low compact
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.keyboard_arrow_up, color: Colors.green, size: 12.sp),
+                    Text(
+                      '\$$high',
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontFamily: 'Familiar',
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.keyboard_arrow_down, color: Colors.red, size: 12.sp),
+                    Text(
+                      '\$$low',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontFamily: 'Familiar',
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            child: Consumer<GoldRateProvider>(
-              builder: (context, goldRateProvider, child) {
-                if (goldRateProvider.isLoading) {
-                  return Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: UIColor.gold.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8.sp),
-                      border: Border.all(color: UIColor.gold.withOpacity(0.3), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 14.w,
-                          height: 14.h,
-                          child: CircularProgressIndicator(
-                            color: UIColor.gold,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        Text(
-                          'Loading rate...',
-                          style: TextStyle(
-                            color: UIColor.gold,
-                            fontFamily: 'Familiar',
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                } 
-                
-                if (goldRateProvider.goldData == null || !goldRateProvider.isConnected) {
-                  return Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8.sp),
-                      border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.signal_wifi_off, color: Colors.red, size: 14.sp),
-                        SizedBox(width: 6.w),
-                        Text(
-                          'Rate unavailable',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontFamily: 'Familiar',
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        GestureDetector(
-                          onTap: () => goldRateProvider.refreshGoldData(),
-                          child: Icon(Icons.refresh, color: Colors.red, size: 14.sp),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-               final goldData = goldRateProvider.goldData!;
-// Change from using bid to using the calculated asking price
-final displayPrice = goldRateProvider.getDisplayPrice(); // This will show asking price
-final high = goldData['high']?.toStringAsFixed(2) ?? 'N/A';
-final low = goldData['low']?.toStringAsFixed(2) ?? 'N/A';
-
-return Container(
-  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-  decoration: BoxDecoration(
-    color: UIColor.gold.withOpacity(0.08),
-    borderRadius: BorderRadius.circular(8.sp),
-    border: Border.all(color: UIColor.gold, width: 2),
-  ),
-  child: Row(
-    children: [
-      // Live indicator
-      Container(
-        width: 6.w,
-        height: 6.h,
-        decoration: BoxDecoration(
-          color: Colors.green,
-          shape: BoxShape.circle,
-        ),
-      ),
-      SizedBox(width: 8.w),
-      
-      // Main rate - now showing asking price
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Gold Rate (Ask)', // Updated label to indicate it's ask price
-              style: TextStyle(
-                color: UIColor.gold.withOpacity(0.7),
-                fontFamily: 'Familiar',
-                fontSize: 10.sp,
-              ),
-            ),
-            Text(
-              '\$$displayPrice', // Now shows calculated asking price
-              style: TextStyle(
-                color: UIColor.gold,
-                fontFamily: 'Familiar',
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
+            
+            SizedBox(width: 8.w),
+            
+            // Refresh button
+            GestureDetector(
+              onTap: () => goldRateProvider.refreshGoldData(),
+              child: Container(
+                padding: EdgeInsets.all(4.w),
+                child: Icon(
+                  Icons.refresh,
+                  color: UIColor.gold.withOpacity(0.7),
+                  size: 14.sp,
+                ),
               ),
             ),
           ],
         ),
-      ),
-      
-      // High/Low compact
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.keyboard_arrow_up, color: Colors.green, size: 12.sp),
-              Text(
-                '\$$high',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontFamily: 'Familiar',
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.keyboard_arrow_down, color: Colors.red, size: 12.sp),
-              Text(
-                '\$$low',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontFamily: 'Familiar',
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-      
-      SizedBox(width: 8.w),
-      
-      // Refresh button
-      GestureDetector(
-        onTap: () => goldRateProvider.refreshGoldData(),
-        child: Container(
-          padding: EdgeInsets.all(4.w),
-          child: Icon(
-            Icons.refresh,
-            color: UIColor.gold.withOpacity(0.7),
-            size: 14.sp,
-          ),
-        ),
-      ),
-    ],
+      );
+    },
   ),
-); 
-              },
-            ),
-          ),
+),
           
           // Scrollable Content
           Expanded(
@@ -819,7 +766,7 @@ return Container(
                 await model.refreshUserStatus();
                 model.getSpotRate();
                 _syncQuantitiesFromViewModel();
-                // Refresh gold rate data
+                // Refresh gold rate data 
                 await goldRateProvider.refreshGoldData();
                 return Future.value();
               },
@@ -1002,6 +949,158 @@ return Container(
       ),
     ), 
   );  
+}
+
+Widget _buildSkeletonGoldRate(
+  BuildContext context, {
+  required bool isLoading,
+  required VoidCallback onRefresh,
+}) {
+  return TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0.3, end: 1.0),
+    duration: const Duration(milliseconds: 1200),
+    curve: Curves.easeInOut,
+    onEnd: () {
+      // Reverse animation for continuous pulsing effect
+      if (isLoading) {
+        // This creates a loop effect
+      }
+    },
+    builder: (context, value, child) {
+      // Create pulsing effect by alternating opacity
+      final pulseValue = isLoading ? (value > 0.65 ? 1.0 - value : value) : 0.7;
+      
+      return Opacity(
+        opacity: 1.0,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: UIColor.gold.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(8.sp),
+            border: Border.all(
+              color: UIColor.gold.withOpacity(isLoading ? 0.3 : 0.2),
+              width: 2,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Pulsing live indicator
+              Container(
+                width: 6.w,
+                height: 6.h,
+                decoration: BoxDecoration(
+                  color: isLoading 
+                      ? UIColor.gold.withOpacity(pulseValue) 
+                      : Colors.grey.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              
+              // Main rate skeleton
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Label skeleton
+                    Container(
+                      width: 80.w,
+                      height: 10.h,
+                      decoration: BoxDecoration(
+                        color: UIColor.gold.withOpacity(0.15 + (pulseValue * 0.15)),
+                        borderRadius: BorderRadius.circular(4.sp),
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    // Price skeleton
+                    Container(
+                      width: 100.w,
+                      height: 16.h,
+                      decoration: BoxDecoration(
+                        color: UIColor.gold.withOpacity(0.2 + (pulseValue * 0.2)),
+                        borderRadius: BorderRadius.circular(4.sp),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // High/Low skeleton
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // High skeleton
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.keyboard_arrow_up,
+                        color: Colors.green.withOpacity(0.2 + (pulseValue * 0.15)),
+                        size: 12.sp,
+                      ),
+                      SizedBox(width: 2.w),
+                      Container(
+                        width: 45.w,
+                        height: 11.h,
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.15 + (pulseValue * 0.1)),
+                          borderRadius: BorderRadius.circular(4.sp),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 2.h),
+                  // Low skeleton
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.red.withOpacity(0.2 + (pulseValue * 0.15)),
+                        size: 12.sp,
+                      ),
+                      SizedBox(width: 2.w),
+                      Container(
+                        width: 45.w,
+                        height: 11.h,
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.15 + (pulseValue * 0.1)),
+                          borderRadius: BorderRadius.circular(4.sp),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              
+              SizedBox(width: 8.w),
+              
+              // Refresh button - always interactive
+              GestureDetector(
+                onTap: onRefresh,
+                child: Container(
+                  padding: EdgeInsets.all(4.w),
+                  decoration: BoxDecoration(
+                    color: isLoading 
+                        ? UIColor.gold.withOpacity(0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(4.sp),
+                  ),
+                  child: Icon(
+                    Icons.refresh,
+                    color: UIColor.gold.withOpacity(isLoading ? 0.5 : 0.7),
+                    size: 14.sp,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
   @override
