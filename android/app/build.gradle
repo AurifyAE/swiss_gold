@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.tecnavis.swissgold"
+    namespace = "com.aurify.swissgold"
     compileSdk = 36
     ndkVersion = "26.1.10909125"
 
@@ -43,11 +43,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.tecnavis.swissgold"
+        applicationId = "com.aurify.swissgold"
         minSdkVersion = flutter.minSdkVersion
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.0"
+        versionCode = 4
+        versionName = "1.1.0"
         multiDexEnabled true
     }
 

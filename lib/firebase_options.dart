@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '323401473101',
     projectId: 'aurify-pushnotification',
     storageBucket: 'aurify-pushnotification.firebasestorage.app',
-    iosBundleId: 'com.tecnavis.swissgold',
+    iosBundleId: 'com.aurify.swissgold',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -73,7 +73,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '323401473101',
     projectId: 'aurify-pushnotification',
     storageBucket: 'aurify-pushnotification.firebasestorage.app',
-    iosBundleId: 'com.tecnavis.swissgold',
+    iosBundleId: 'com.aurify.swissgold',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

@@ -1,4 +1,4 @@
-package com.tecnavis.swissgold
+package com.aurify.swissgold
 
 import android.content.BroadcastReceiver
 import android.content.Context

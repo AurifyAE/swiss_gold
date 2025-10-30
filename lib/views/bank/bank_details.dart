@@ -18,7 +18,7 @@ class BankDetailsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => BankProvider(),
-      child: BankDetailsScaffold(),
+      child: BankDetailsScaffold(), 
     );
   }
 }
@@ -290,17 +290,17 @@ class BankCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    'https://api.aurify.ae${bankDetails.logo}',
+                    'https://api.aurify.ae${bankDetails.logo}', 
                     height: 60,
                     width: 60,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
+                    errorBuilder: (context, error, stackTrace) { 
                       return Container(
                         height: 60,
                         width: 60,
                         decoration: BoxDecoration(
                           color: Colors.grey[900],
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(8), 
                         ),
                         child: Icon(
                           Icons.account_balance, 
